@@ -3,14 +3,24 @@ name: Сборка Atom Lite
 # ATOM LITE: заменяет мёртвый Azure Pipelines (script/vsts), который ссылался
 # на несуществующий образ macos-10.15 и Node 12.16.3 из 2020 года.
 #
-# Даёт то, чего у форка не было: возможность собрать Atom.app в облаке
-# GitHub и скачать готовый архив, не настраивая сборочное окружение у себя.
+# Даёт то, чего у форка не было: возможность собрать Atom.app в облаке GitHub
+# и скачать готовый архив, не настраивая сборочное окружение у себя.
 # Для публичных репозиториев macOS-раннеры бесплатны.
 #
-# Почему только arm64: у бесплатных GitHub-раннеров образы macOS теперь
-# arm64 (Apple Silicon). Интеловские ярлыки вроде macos-15-intel доступны
-# только на платных тарифах, поэтому задача для Intel убрана.
-# Для нашей цели это и не нужно — нужна именно нативная arm64-сборка.
+# ── Про архитектуры ────────────────────────────────────────────────────────
+# Бесплатные образы macOS у GitHub — только arm64 (Apple Silicon).
+# Интеловские ярлыки вроде macos-15-intel остались на платных тарифах.
+#
+# Скрипты сборки Atom написаны под Node 12.16.3, а Node 12 существует
+# только для x64. Поэтому мы ставим Rosetta 2 и запускаем Node 12 как
+# x64-процесс — на arm64-машине это работает.
+#
+# Отсюда две задачи:
+#   · x64   — заведомо рабочий путь, повторяет конфигурацию оригинального CI.
+#             Приложение соберётся интеловским и запустится через Rosetta 2.
+#   · arm64 — нативная сборка. Требует пересборки нативных модулей после
+#             bootstrap (см. пояснение в задаче), поэтому помечена как
+#             экспериментальная.
 
 on:
   push:
@@ -18,18 +28,17 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    name: macOS Apple Silicon (arm64)
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Основная задача: интеловская сборка. Повторяет то, что работало в CI
+  # оригинального Atom, поэтому самая предсказуемая.
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-x64:
+    name: macOS x64 (через Rosetta)
     runs-on: macos-15
     timeout-minutes: 180
 
     env:
-      # Ключевая переменная. Её понимают:
-      #   · electron-packager   — скачает Electron нужной архитектуры
-      #   · electron-mksnapshot — скачает mksnapshot нужной архитектуры
-      #     (download-mksnapshot.js: `archToDownload = process.env.npm_config_arch`)
-      #   · npm / node-gyp      — соберут нативные модули под нужную архитектуру
-      npm_config_arch: arm64
+      npm_config_arch: x64
       # Собирать нативные модули из исходников, а не брать готовые бинарники:
       # готовые собраны под другую ABI и не подойдут для Electron 11.5.0.
       npm_config_build_from_source: 'true'
@@ -38,91 +47,210 @@ jobs:
       - name: Клонирование
         uses: actions/checkout@v4
 
-      # Скрипты сборки Atom написаны под Node 12.16.3 (npm 6 + node-gyp 5).
-      # Сборки Node 12 для arm64 не существует — выпускался только x64.
-      # Поэтому ставим Rosetta 2 и запускаем Node 12 как x64-процесс,
-      # а целевую архитектуру задаём через npm_config_arch=arm64.
-      # Родная arm64-сборка при этом получается корректной: артефакты
-      # (Electron, mksnapshot, нативные модули) скачиваются и собираются
-      # именно под arm64.
-      - name: Rosetta 2 (нужна для Node 12 — у него нет сборки под arm64)
+      - name: Rosetta 2 (для Node 12 — сборки под arm64 у него нет)
         run: sudo softwareupdate --install-rosetta --agree-to-license
 
-      - name: Node.js 12.16.3 (x64 через Rosetta)
+      - name: Node.js 12.16.3 (x64)
         uses: actions/setup-node@v4
         with:
           node-version: '12.16.3'
           architecture: 'x64'
 
-      # node-gyp 5 не работает с Python 3.12+ (там убрали distutils)
-      - name: Python 3.9 (для node-gyp)
+      - name: Python 3.9 (node-gyp 5 не работает с Python 3.12+)
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
 
-      - name: Показать окружение
+      - name: Окружение
         run: |
-          echo "Машина:        $(uname -m)"
-          echo "Node:          $(node --version)  (архитектура: $(node -p 'process.arch'))"
-          echo "npm:           $(npm --version)"
-          echo "Python:        $(python3 --version)"
-          echo "Целевая арх.:  $npm_config_arch"
+          echo "Машина:       $(uname -m)"
+          echo "Node:         $(node --version) (process.arch=$(node -p 'process.arch'))"
+          echo "npm:          $(npm --version)"
+          echo "Python:       $(python3 --version)"
+          echo "Целевая арх.: $npm_config_arch"
           sw_vers
 
-      # Вывод bootstrap-а сохраняется в файл: если что-то упадёт, следующий шаг
-      # выведет хвост лога аннотациями — их видно через API GitHub.
-      - name: Bootstrap (зависимости и нативные модули)
+      - name: Bootstrap
         id: bootstrap
         run: |
           set +e
           script/bootstrap 2>&1 | tee bootstrap.log
           exit ${PIPESTATUS[0]}
 
-      - name: Диагностика при падении bootstrap
-        if: failure() && steps.bootstrap.outcome == 'failure'
+      - name: Диагностика bootstrap — ошибки npm
+        if: failure()
         run: |
-          echo "Последние строки bootstrap.log:"
-          tail -25 bootstrap.log 2>/dev/null | tr -d '\r' | while IFS= read -r line; do
-            echo "::error title=Bootstrap::$line"
+          grep -a "npm ERR" bootstrap.log | tail -12 | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=npm-err::$l"
           done
-          exit 1
 
-      # set -o pipefail обязателен: без него код возврата берётся от tee,
-      # а не от script/build, и упавшая сборка выглядела бы успешной.
+      - name: Диагностика bootstrap — ошибки сборки
+        if: failure()
+        run: |
+          grep -aiE "gyp ERR|error:|fatal error|not found:|ETARGET|E404|ENOTFOUND|Failed to" bootstrap.log | tail -12 | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=build-err::$l"
+          done
+
+      - name: Диагностика bootstrap — контекст
+        if: failure()
+        run: |
+          tail -30 bootstrap.log | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=context::$l"
+          done
+
       - name: Сборка приложения
         id: build
         run: |
           set -o pipefail
           script/build --compress-artifacts 2>&1 | tee build.log
 
-      - name: Диагностика при падении сборки
-        if: failure() && steps.build.outcome == 'failure'
+      - name: Диагностика сборки
+        if: failure()
         run: |
-          echo "Последние строки build.log:"
-          tail -25 build.log 2>/dev/null | tr -d '\r' | while IFS= read -r line; do
-            echo "::error title=Build::$line"
+          tail -30 build.log | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=build::$l"
           done
-          exit 1
 
       - name: Что получилось
         if: success()
         run: |
           ls -lh out/ | head -20
           du -sh out/*.app 2>/dev/null || true
+          file out/Atom.app/Contents/MacOS/Atom 2>/dev/null || true
 
-      - name: Архив
+      - name: Загрузить артефакт
         if: success()
         run: |
           mkdir -p artifacts
           for f in out/*.zip; do
-            base=$(basename "$f" .zip)
-            cp "$f" "artifacts/${base}-arm64.zip"
+            cp "$f" "artifacts/$(basename "$f" .zip)-x64.zip"
           done
           ls -lh artifacts/
 
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: atom-macos-x64
+          path: artifacts/*.zip
+          if-no-files-found: error
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Экспериментальная задача: нативная arm64-сборка.
+  #
+  # Почему нельзя просто задать npm_config_arch=arm64 на весь процесс:
+  # установщик apm (`install-apm.js`) в своём postinstall запускает
+  # `./bin/npm rebuild`, который собирает нативные модули под ту архитектуру,
+  # что указана в npm_config_arch. Получается x64-процесс, собирающий
+  # arm64-модули для себя же — это и валило bootstrap.
+  #
+  # Поэтому в два приёма: bootstrap под x64 (как в рабочем CI),
+  # затем отдельная пересборка нативных модулей под arm64+Electron,
+  # и только потом сборка приложения под arm64.
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-arm64:
+    name: macOS arm64 (нативная, экспериментальная)
+    runs-on: macos-15
+    timeout-minutes: 180
+    continue-on-error: true
+
+    env:
+      npm_config_build_from_source: 'true'
+
+    steps:
+      - name: Клонирование
+        uses: actions/checkout@v4
+
+      - name: Rosetta 2 (для Node 12)
+        run: sudo softwareupdate --install-rosetta --agree-to-license
+
+      - name: Node.js 12.16.3 (x64)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '12.16.3'
+          architecture: 'x64'
+
+      - name: Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Bootstrap (под x64 — так apm ставится без ошибок)
+        id: bootstrap
+        env:
+          npm_config_arch: x64
+        run: |
+          set +e
+          script/bootstrap 2>&1 | tee bootstrap.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Диагностика bootstrap — ошибки npm
+        if: failure()
+        run: |
+          grep -a "npm ERR" bootstrap.log | tail -12 | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=npm-err::$l"
+          done
+
+      - name: Диагностика bootstrap — контекст
+        if: failure()
+        run: |
+          tail -30 bootstrap.log | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=context::$l"
+          done
+
+      - name: Пересборка нативных модулей под arm64 + Electron 11.5.0
+        if: success()
+        id: rebuild
+        run: |
+          set +e
+          APM_NPM="$GITHUB_WORKSPACE/apm/node_modules/atom-package-manager/bin/npm"
+          ls -l "$APM_NPM" || exit 1
+          npm_config_arch=arm64 "$APM_NPM" rebuild \
+            --target=11.5.0 \
+            --arch=arm64 \
+            --dist-url=https://electronjs.org/headers \
+            --build-from-source 2>&1 | tee rebuild.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Диагностика пересборки
+        if: failure()
+        run: |
+          grep -aiE "gyp ERR|error:|fatal error|clang|ld:" rebuild.log | tail -25 | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=rebuild::$l"
+          done
+
+      - name: Сборка приложения под arm64
+        if: success()
+        id: build
+        env:
+          npm_config_arch: arm64
+        run: |
+          set -o pipefail
+          script/build --compress-artifacts 2>&1 | tee build.log
+
+      - name: Диагностика сборки
+        if: failure()
+        run: |
+          tail -30 build.log | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=build::$l"
+          done
+
+      - name: Проверить, что бинарник действительно arm64
+        if: success()
+        run: |
+          file out/Atom.app/Contents/MacOS/Atom
+          ls -lh out/ | head -20
+
       - name: Загрузить артефакт
         if: success()
-        uses: actions/upload-artifact@v4
+        run: |
+          mkdir -p artifacts
+          for f in out/*.zip; do
+            cp "$f" "artifacts/$(basename "$f" .zip)-arm64.zip"
+          done
+          ls -lh artifacts/
+
+      - uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: atom-macos-arm64
           path: artifacts/*.zip
