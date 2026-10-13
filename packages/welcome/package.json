@@ -28,7 +28,7 @@
     },
     "showSunsettingOnStartup": {
       "type": "boolean",
-      "default": true,
+      "default": false,
       "description": "Show sunsetting pane when opening a new Atom window."
     }
   },

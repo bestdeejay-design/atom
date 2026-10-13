@@ -56,9 +56,11 @@ export default class WelcomePackage {
       )
     );
 
-    if (atom.config.get('core.telemetryConsent') === 'undecided') {
-      await atom.workspace.open(CONSENT_URI);
-    }
+    // ATOM LITE: запрос согласия на телеметрию убран.
+    //
+    // Раньше при первом запуске открывалась вкладка с вопросом «делиться
+    // статистикой использования?». Телеметрия из сборки удалена полностью,
+    // спрашивать больше не о чем.
 
     if (atom.config.get('welcome.showOnStartup')) {
       await this.showWelcome();

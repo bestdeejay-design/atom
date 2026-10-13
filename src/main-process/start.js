@@ -3,7 +3,6 @@ const nslog = require('nslog');
 const path = require('path');
 const temp = require('temp');
 const parseCommandLine = require('./parse-command-line');
-const startCrashReporter = require('../crash-reporter-start');
 const getReleaseChannel = require('../get-release-channel');
 const atomPaths = require('../atom-paths');
 const fs = require('fs');
@@ -103,12 +102,13 @@ module.exports = function start(resourcePath, devResourcePath, startTime) {
 
   app.on('open-file', addPathToOpen);
   app.on('open-url', addUrlToOpen);
-  app.on('will-finish-launching', () =>
-    startCrashReporter({
-      uploadToServer: config.get('core.telemetryConsent') === 'limited',
-      releaseChannel
-    })
-  );
+
+  // ATOM LITE: краш-репортер отключён.
+  //
+  // Раньше здесь вызывался startCrashReporter(), который отправлял отчёты о
+  // падениях на `https://atom.io/crash_reports`. Сервис мёртв с 15.12.2022,
+  // поэтому отправка только создавала сетевой трафик в никуда.
+  // Приложение больше не отправляет данные наружу ни в каком виде.
 
   if (args.userDataDir != null) {
     app.setPath('userData', args.userDataDir);
