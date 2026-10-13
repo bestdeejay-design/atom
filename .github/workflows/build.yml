@@ -15,6 +15,12 @@ name: Сборка Atom Lite
 # только для x64. Поэтому мы ставим Rosetta 2 и запускаем Node 12 как
 # x64-процесс — на arm64-машине это работает.
 #
+# ── Про Xcode ──────────────────────────────────────────────────────────────
+# С Xcode 16.3 Apple начала определять TARGET_OS_MAC. От этого ломается
+# старый zlib внутри git-utils/libgit2: он подменяет fdopen, и системный
+# <stdio.h> не парсится (_stdio.h:318: error: expected ')'). Поэтому обе
+# задачи переключаются на Xcode 16.2, где бага ещё нет.
+#
 # Отсюда две задачи:
 #   · x64   — заведомо рабочий путь, повторяет конфигурацию оригинального CI.
 #             Приложение соберётся интеловским и запустится через Rosetta 2.
@@ -61,6 +67,21 @@ jobs:
         with:
           python-version: '3.9'
 
+      # Xcode 16.3+ определяет TARGET_OS_MAC, из-за чего старый zlib внутри
+      # git-utils/libgit2 ломает системный <stdio.h>. В 16.2 этого нет.
+      - name: Xcode 16.2 (в 16.3+ старые нативные модули не собираются)
+        run: |
+          for v in 16.2 16.1 16.0; do
+            if [ -d "/Applications/Xcode_$v.app" ]; then
+              sudo xcode-select -s "/Applications/Xcode_$v.app/Contents/Developer"
+              echo "Выбран Xcode $v"
+              break
+            fi
+          done
+          echo "DEVELOPER_DIR: $(xcode-select -p)"
+          xcodebuild -version
+          echo "SDK: $(xcrun --show-sdk-version)"
+
       - name: Окружение
         run: |
           echo "Машина:       $(uname -m)"
@@ -87,9 +108,20 @@ jobs:
       - name: Диагностика bootstrap — ошибки сборки
         if: failure()
         run: |
-          grep -aiE "gyp ERR|error:|fatal error|not found:|ETARGET|E404|ENOTFOUND|Failed to" bootstrap.log | tail -12 | tr -d '\r' | while IFS= read -r l; do
+          grep -aiE "gyp ERR|error:|fatal error|not found:|ETARGET|E404|ENOTFOUND|Failed to" bootstrap.log | tail -10 | tr -d '\r' | while IFS= read -r l; do
             echo "::error title=build-err::$l"
           done
+
+      - name: Диагностика bootstrap — окно вокруг первой ошибки
+        if: failure()
+        run: |
+          LINE=$(grep -a -n "error:" bootstrap.log | head -1 | cut -d: -f1)
+          if [ -n "$LINE" ]; then
+            FROM=$((LINE-5)); [ "$FROM" -lt 1 ] && FROM=1
+            sed -n "${FROM},$((LINE+15))p" bootstrap.log | tr -d '\r' | while IFS= read -r l; do
+              echo "::error title=first-error::$l"
+            done
+          fi
 
       - name: Диагностика bootstrap — контекст
         if: failure()
@@ -174,6 +206,19 @@ jobs:
         with:
           python-version: '3.9'
 
+      - name: Xcode 16.2 (в 16.3+ старые нативные модули не собираются)
+        run: |
+          for v in 16.2 16.1 16.0; do
+            if [ -d "/Applications/Xcode_$v.app" ]; then
+              sudo xcode-select -s "/Applications/Xcode_$v.app/Contents/Developer"
+              echo "Выбран Xcode $v"
+              break
+            fi
+          done
+          echo "DEVELOPER_DIR: $(xcode-select -p)"
+          xcodebuild -version
+          echo "SDK: $(xcrun --show-sdk-version)"
+
       - name: Bootstrap (под x64 — так apm ставится без ошибок)
         id: bootstrap
         env:
@@ -186,14 +231,25 @@ jobs:
       - name: Диагностика bootstrap — ошибки npm
         if: failure()
         run: |
-          grep -a "npm ERR" bootstrap.log | tail -12 | tr -d '\r' | while IFS= read -r l; do
+          grep -a "npm ERR" bootstrap.log | tail -8 | tr -d '\r' | while IFS= read -r l; do
             echo "::error title=npm-err::$l"
           done
+
+      - name: Диагностика bootstrap — окно вокруг первой ошибки
+        if: failure()
+        run: |
+          LINE=$(grep -a -n "error:" bootstrap.log | head -1 | cut -d: -f1)
+          if [ -n "$LINE" ]; then
+            FROM=$((LINE-5)); [ "$FROM" -lt 1 ] && FROM=1
+            sed -n "${FROM},$((LINE+15))p" bootstrap.log | tr -d '\r' | while IFS= read -r l; do
+              echo "::error title=first-error::$l"
+            done
+          fi
 
       - name: Диагностика bootstrap — контекст
         if: failure()
         run: |
-          tail -30 bootstrap.log | tr -d '\r' | while IFS= read -r l; do
+          tail -20 bootstrap.log | tr -d '\r' | while IFS= read -r l; do
             echo "::error title=context::$l"
           done
 
@@ -204,11 +260,13 @@ jobs:
           set +e
           APM_NPM="$GITHUB_WORKSPACE/apm/node_modules/atom-package-manager/bin/npm"
           ls -l "$APM_NPM" || exit 1
-          npm_config_arch=arm64 "$APM_NPM" rebuild \
-            --target=11.5.0 \
-            --arch=arm64 \
-            --dist-url=https://electronjs.org/headers \
-            --build-from-source 2>&1 | tee rebuild.log
+          npm_config_arch=arm64 npm_config_runtime=electron npm_config_target=11.5.0 \
+            "$APM_NPM" rebuild \
+              --runtime=electron \
+              --target=11.5.0 \
+              --arch=arm64 \
+              --dist-url=https://electronjs.org/headers \
+              --build-from-source 2>&1 | tee rebuild.log
           exit ${PIPESTATUS[0]}
 
       - name: Диагностика пересборки
