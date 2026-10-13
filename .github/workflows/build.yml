@@ -6,6 +6,11 @@ name: Сборка Atom Lite
 # Даёт то, чего у форка не было: возможность собрать Atom.app в облаке
 # GitHub и скачать готовый архив, не настраивая сборочное окружение у себя.
 # Для публичных репозиториев macOS-раннеры бесплатны.
+#
+# Почему только arm64: у бесплатных GitHub-раннеров образы macOS теперь
+# arm64 (Apple Silicon). Интеловские ярлыки вроде macos-15-intel доступны
+# только на платных тарифах, поэтому задача для Intel убрана.
+# Для нашей цели это и не нужно — нужна именно нативная arm64-сборка.
 
 on:
   push:
@@ -14,40 +19,17 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
+    name: macOS Apple Silicon (arm64)
+    runs-on: macos-15
     timeout-minutes: 180
-
-    # arm64-сборка помечена как экспериментальная: сборочные скрипты Atom
-    # писались под Node 12 (которого нет для arm64) и npm 6, поэтому первые
-    # прогоны могут падать. Интеловская сборка — заведомо рабочий путь.
-    continue-on-error: ${{ matrix.experimental }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: macOS Intel (x64)
-            os: macos-15-intel
-            arch: x64
-            node: '12.16.3'
-            python: '3.9'
-            experimental: false
-
-          - name: macOS Apple Silicon (arm64)
-            os: macos-15
-            arch: arm64
-            node: '16'
-            python: '3.9'
-            experimental: true
 
     env:
       # Ключевая переменная. Её понимают:
-      #   · electron-packager  — скачает Electron нужной архитектуры
+      #   · electron-packager   — скачает Electron нужной архитектуры
       #   · electron-mksnapshot — скачает mksnapshot нужной архитектуры
-      #     (см. download-mksnapshot.js: `archToDownload = process.env.npm_config_arch`)
+      #     (download-mksnapshot.js: `archToDownload = process.env.npm_config_arch`)
       #   · npm / node-gyp      — соберут нативные модули под нужную архитектуру
-      npm_config_arch: ${{ matrix.arch }}
+      npm_config_arch: arm64
       # Собирать нативные модули из исходников, а не брать готовые бинарники:
       # готовые собраны под другую ABI и не подойдут для Electron 11.5.0.
       npm_config_build_from_source: 'true'
@@ -56,50 +38,92 @@ jobs:
       - name: Клонирование
         uses: actions/checkout@v4
 
-      - name: Node.js ${{ matrix.node }}
+      # Скрипты сборки Atom написаны под Node 12.16.3 (npm 6 + node-gyp 5).
+      # Сборки Node 12 для arm64 не существует — выпускался только x64.
+      # Поэтому ставим Rosetta 2 и запускаем Node 12 как x64-процесс,
+      # а целевую архитектуру задаём через npm_config_arch=arm64.
+      # Родная arm64-сборка при этом получается корректной: артефакты
+      # (Electron, mksnapshot, нативные модули) скачиваются и собираются
+      # именно под arm64.
+      - name: Rosetta 2 (нужна для Node 12 — у него нет сборки под arm64)
+        run: sudo softwareupdate --install-rosetta --agree-to-license
+
+      - name: Node.js 12.16.3 (x64 через Rosetta)
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
+          node-version: '12.16.3'
+          architecture: 'x64'
 
-      - name: Python ${{ matrix.python }} (нужен для node-gyp)
+      # node-gyp 5 не работает с Python 3.12+ (там убрали distutils)
+      - name: Python 3.9 (для node-gyp)
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python }}
+          python-version: '3.9'
 
       - name: Показать окружение
         run: |
-          echo "Node:    $(node --version)"
-          echo "npm:     $(npm --version)"
-          echo "Python:  $(python3 --version)"
-          echo "Арх. узла:    $(node -p 'process.arch')"
-          echo "Целевая арх.: $npm_config_arch"
-          sw_vers || true
+          echo "Машина:        $(uname -m)"
+          echo "Node:          $(node --version)  (архитектура: $(node -p 'process.arch'))"
+          echo "npm:           $(npm --version)"
+          echo "Python:        $(python3 --version)"
+          echo "Целевая арх.:  $npm_config_arch"
+          sw_vers
 
-      - name: Bootstrap (установка зависимостей и нативных модулей)
-        run: script/bootstrap
-        env:
-          CI: 'true'
+      # Вывод bootstrap-а сохраняется в файл: если что-то упадёт, следующий шаг
+      # выведет хвост лога аннотациями — их видно через API GitHub.
+      - name: Bootstrap (зависимости и нативные модули)
+        id: bootstrap
+        run: |
+          set +e
+          script/bootstrap 2>&1 | tee bootstrap.log
+          exit ${PIPESTATUS[0]}
 
+      - name: Диагностика при падении bootstrap
+        if: failure() && steps.bootstrap.outcome == 'failure'
+        run: |
+          echo "Последние строки bootstrap.log:"
+          tail -25 bootstrap.log 2>/dev/null | tr -d '\r' | while IFS= read -r line; do
+            echo "::error title=Bootstrap::$line"
+          done
+          exit 1
+
+      # set -o pipefail обязателен: без него код возврата берётся от tee,
+      # а не от script/build, и упавшая сборка выглядела бы успешной.
       - name: Сборка приложения
-        run: script/build --compress-artifacts
+        id: build
+        run: |
+          set -o pipefail
+          script/build --compress-artifacts 2>&1 | tee build.log
+
+      - name: Диагностика при падении сборки
+        if: failure() && steps.build.outcome == 'failure'
+        run: |
+          echo "Последние строки build.log:"
+          tail -25 build.log 2>/dev/null | tr -d '\r' | while IFS= read -r line; do
+            echo "::error title=Build::$line"
+          done
+          exit 1
 
       - name: Что получилось
+        if: success()
         run: |
           ls -lh out/ | head -20
           du -sh out/*.app 2>/dev/null || true
 
-      - name: Переименовать архив по архитектуре
+      - name: Архив
+        if: success()
         run: |
           mkdir -p artifacts
           for f in out/*.zip; do
             base=$(basename "$f" .zip)
-            cp "$f" "artifacts/${base}-${{ matrix.arch }}.zip"
+            cp "$f" "artifacts/${base}-arm64.zip"
           done
           ls -lh artifacts/
 
       - name: Загрузить артефакт
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: atom-macos-${{ matrix.arch }}
+          name: atom-macos-arm64
           path: artifacts/*.zip
           if-no-files-found: error
