@@ -330,10 +330,19 @@ module.exports = function(packagedAppPath) {
         process.platform === 'darwin' &&
         snapshotBinary === 'v8_context_snapshot.bin'
       ) {
-        // TODO: check if we're building for arm64 and use the arm64 version of the binary
+        // ATOM LITE: имя снапшота зависит от целевой архитектуры.
+        //
+        // Electron на macOS ищет файл со строгим именем:
+        //   v8_context_snapshot.x86_64.bin — для Intel
+        //   v8_context_snapshot.arm64.bin  — для Apple Silicon
+        //
+        // Раньше здесь было жёстко прописано x86_64 с TODO про arm64 — из-за
+        // этого нативная сборка под M-чипы не запускалась вовсе (Electron не
+        // находил снапшот по своему имени).
+        const snapshotArch = CONFIG.targetArch === 'arm64' ? 'arm64' : 'x86_64';
         destinationPath = path.join(
           startupBlobDestinationPath,
-          'v8_context_snapshot.x86_64.bin'
+          `v8_context_snapshot.${snapshotArch}.bin`
         );
       }
       console.log(`Moving generated startup blob into "${destinationPath}"`);

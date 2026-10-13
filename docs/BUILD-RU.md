@@ -1,0 +1,169 @@
+# Как собрать Atom Lite
+
+Два пути. Первый — облачный (рекомендуется), второй — локальный.
+
+---
+
+## Путь 1: сборка в облаке GitHub (рекомендуется)
+
+Настроено в `.github/workflows/build.yml`. Тебе не нужно ничего
+устанавливать у себя — сборка идёт на машинах GitHub, для публичных
+репозиториев это бесплатно.
+
+### Как запустить
+
+1. Запушь что-нибудь в любую ветку репозитория **или** зайди в
+   **Actions** → **Сборка Atom Lite** → **Run workflow**
+2. Дождись окончания (первый прогон — 30–60 минут)
+3. Открой завершённый прогон и скачай артефакт внизу страницы:
+   - `atom-macos-x64` → `atom-mac-x64.zip` — для Intel Mac
+   - `atom-macos-arm64` → `atom-mac-arm64.zip` — для Apple Silicon
+
+### Установка скачанного
+
+```bash
+unzip atom-mac-arm64.zip -d /Applications
+xattr -dr com.apple.quarantine /Applications/Atom.app   # снять карантин
+open /Applications/Atom.app
+```
+
+Локально собранный и скачанный из CI архив помечен карантином, потому что
+не подписан сертификатом Apple. `xattr` это снимает.
+
+> ⚠️ Сборка **не подписана**. Для личного использования это нормально.
+> Если захочешь подписать — нужен сертификат Apple Developer, и тогда
+> сборку запускают с флагом `--code-sign`.
+
+---
+
+## Путь 2: сборка на своём Mac
+
+### Что нужно
+
+| | Версия | Почему |
+|---|---|---|
+| Node.js | **12.16.3** | Именно под неё писались скрипты (npm 6, node-gyp 5) |
+| npm | 6.14.x | Идёт в комплекте с Node 12 |
+| Python | **3.9** (не 3.12+) | В Python 3.12 убрали `distutils`, на котором ломается старый node-gyp |
+| Git | любая | |
+
+### Apple Silicon: важный нюанс
+
+**Node 12 не существует для arm64.** Он выпускался только под x64.
+
+Отсюда два варианта:
+
+**Вариант «A» — x64-сборка, работает через Rosetta 2**
+
+```bash
+nvm install 12.16.3
+nvm use 12.16.3
+script/bootstrap
+script/build --compress-artifacts
+```
+
+Получится интеловский `Atom.app`. На M-чипе он запустится — но через
+Rosetta 2, то есть не нативно.
+
+**Вариант «B» — нативная arm64-сборка**
+
+Нужен Node **16 или новее** (у них есть сборки для arm64) и явное указание
+целевой архитектуры:
+
+```bash
+nvm install 16
+nvm use 16
+
+export npm_config_arch=arm64
+export npm_config_build_from_source=true
+
+script/bootstrap
+script/build --compress-artifacts
+```
+
+Тогда `electron-packager` скачает Electron для arm64,
+`electron-mksnapshot` — arm64-версию mksnapshot, а нативные модули
+скомпилируются под arm64.
+
+> Это путь с неизвестными: скрипты сборки 2022 года официально
+> тестировались только на Node 12. Если что-то падает — не удивляйся,
+> это ожидаемо, и это чинится по шагам (см. ниже).
+
+---
+
+## Что именно было починено для Apple Silicon
+
+Оригинальный Atom собирался только под Intel. Три причины, все найдены в коде:
+
+### 1. Архитектура была прописана константой
+
+```js
+// script/lib/package-application.js — было:
+arch: process.platform === 'darwin' ? 'x64' : HOST_ARCH, // OS X is 64-bit only
+```
+
+Комментарий «OS X is 64-bit only» писался до появления Apple Silicon.
+
+**Стало:** новая функция `computeTargetArch()` в `script/config.js` — берёт
+архитектуру машины, а переопределяется через `npm_config_arch` или
+`ATOM_TARGET_ARCH`.
+
+### 2. Имя V8-снапшота было жёстко x86_64
+
+```js
+// script/lib/generate-startup-snapshot.js — было:
+// TODO: check if we're building for arm64 and use the arm64 version of the binary
+destinationPath = path.join(..., 'v8_context_snapshot.x86_64.bin');
+```
+
+Electron на macOS ищет снапшот строго по имени:
+`v8_context_snapshot.x86_64.bin` для Intel и
+`v8_context_snapshot.arm64.bin` для Apple Silicon.
+
+**Стало:** имя выбирается по `CONFIG.targetArch`.
+
+### 3. Хорошая новость: Electron 11.5.0 всё умеет
+
+Проверено — в релизе `electron/electron@v11.5.0` есть все нужные артефакты:
+
+```
+electron-v11.5.0-darwin-arm64.zip        ✅
+mksnapshot-v11.5.0-darwin-arm64.zip      ✅
+chromedriver-v11.5.0-darwin-arm64.zip    ✅
+```
+
+Переписывать проект не нужно. Нужно было только починить сборку.
+
+---
+
+## Если сборка падает — где смотреть
+
+| Симптом | Причина | Что делать |
+|---|---|---|
+| `Python is required to build Atom` | нет Python или он 3.12+ | поставить Python 3.9 |
+| `node-gyp` ошибки на нативных модулях | несовпадение ABI | `export npm_config_build_from_source=true` |
+| `Could not find mksnapshot` | скачался mksnapshot не той архитектуры | проверить `npm_config_arch` |
+| `Atom.app` не запускается сразу после сборки | карантин / не найдён снапшот | `xattr -dr com.apple.quarantine` |
+| Падает на `git+https://github.com/atom/...` | сеть | архивы `atom/*` доступны, проверь соединение |
+
+---
+
+## Полезные команды
+
+```bash
+script/bootstrap                    # установить всё необходимое
+script/build                        # собрать
+script/build --compress-artifacts   # собрать + сделать zip
+script/build --install /Applications  # собрать + сразу установить
+script/build --existing-binaries    # пересобрать без повторной транспиляции
+script/lint                         # проверить стиль кода
+script/test                         # прогнать тесты
+```
+
+---
+
+## Что уже удалено из сборки
+
+Пакеты `github`, `metrics`, `exception-reporting`, `open-on-github`,
+`update-package-dependencies` исключены из `package.json` — они больше не
+устанавливаются и не собираются. Подробности в `docs/WEIGHT-RU.md`.

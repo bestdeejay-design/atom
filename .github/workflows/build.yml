@@ -1,0 +1,105 @@
+name: Сборка Atom Lite
+
+# ATOM LITE: заменяет мёртвый Azure Pipelines (script/vsts), который ссылался
+# на несуществующий образ macos-10.15 и Node 12.16.3 из 2020 года.
+#
+# Даёт то, чего у форка не было: возможность собрать Atom.app в облаке
+# GitHub и скачать готовый архив, не настраивая сборочное окружение у себя.
+# Для публичных репозиториев macOS-раннеры бесплатны.
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 180
+
+    # arm64-сборка помечена как экспериментальная: сборочные скрипты Atom
+    # писались под Node 12 (которого нет для arm64) и npm 6, поэтому первые
+    # прогоны могут падать. Интеловская сборка — заведомо рабочий путь.
+    continue-on-error: ${{ matrix.experimental }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Intel (x64)
+            os: macos-15-intel
+            arch: x64
+            node: '12.16.3'
+            python: '3.9'
+            experimental: false
+
+          - name: macOS Apple Silicon (arm64)
+            os: macos-15
+            arch: arm64
+            node: '16'
+            python: '3.9'
+            experimental: true
+
+    env:
+      # Ключевая переменная. Её понимают:
+      #   · electron-packager  — скачает Electron нужной архитектуры
+      #   · electron-mksnapshot — скачает mksnapshot нужной архитектуры
+      #     (см. download-mksnapshot.js: `archToDownload = process.env.npm_config_arch`)
+      #   · npm / node-gyp      — соберут нативные модули под нужную архитектуру
+      npm_config_arch: ${{ matrix.arch }}
+      # Собирать нативные модули из исходников, а не брать готовые бинарники:
+      # готовые собраны под другую ABI и не подойдут для Electron 11.5.0.
+      npm_config_build_from_source: 'true'
+
+    steps:
+      - name: Клонирование
+        uses: actions/checkout@v4
+
+      - name: Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Python ${{ matrix.python }} (нужен для node-gyp)
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Показать окружение
+        run: |
+          echo "Node:    $(node --version)"
+          echo "npm:     $(npm --version)"
+          echo "Python:  $(python3 --version)"
+          echo "Арх. узла:    $(node -p 'process.arch')"
+          echo "Целевая арх.: $npm_config_arch"
+          sw_vers || true
+
+      - name: Bootstrap (установка зависимостей и нативных модулей)
+        run: script/bootstrap
+        env:
+          CI: 'true'
+
+      - name: Сборка приложения
+        run: script/build --compress-artifacts
+
+      - name: Что получилось
+        run: |
+          ls -lh out/ | head -20
+          du -sh out/*.app 2>/dev/null || true
+
+      - name: Переименовать архив по архитектуре
+        run: |
+          mkdir -p artifacts
+          for f in out/*.zip; do
+            base=$(basename "$f" .zip)
+            cp "$f" "artifacts/${base}-${{ matrix.arch }}.zip"
+          done
+          ls -lh artifacts/
+
+      - name: Загрузить артефакт
+        uses: actions/upload-artifact@v4
+        with:
+          name: atom-macos-${{ matrix.arch }}
+          path: artifacts/*.zip
+          if-no-files-found: error

@@ -4,7 +4,6 @@ const assert = require('assert');
 const childProcess = require('child_process');
 const electronPackager = require('electron-packager');
 const fs = require('fs-extra');
-const hostArch = require('@electron/get').getHostArch;
 const includePathInPackagedApp = require('./include-path-in-packaged-app');
 const getLicenseText = require('./get-license-text');
 const path = require('path');
@@ -12,7 +11,11 @@ const spawnSync = require('./spawn-sync');
 const template = require('lodash.template');
 
 const CONFIG = require('../config');
-const HOST_ARCH = hostArch();
+
+// ATOM LITE: архитектура сборки берётся из `script/config.js` и по умолчанию
+// совпадает с архитектурой машины. Раньше здесь стоял `hostArch()` из
+// `@electron/get`, а ниже — жёсткая константа 'x64' для macOS.
+const HOST_ARCH = CONFIG.targetArch;
 
 module.exports = function() {
   const appName = getAppName();
@@ -25,7 +28,8 @@ module.exports = function() {
     appBundleId: 'com.github.atom',
     appCopyright: `Copyright © 2014-${new Date().getFullYear()} GitHub, Inc. All rights reserved.`,
     appVersion: CONFIG.appMetadata.version,
-    arch: process.platform === 'darwin' ? 'x64' : HOST_ARCH, // OS X is 64-bit only
+    arch: HOST_ARCH, // ATOM LITE: было жёстко 'x64' для macOS — из-за этого
+    // на Apple Silicon собирался интеловский бинарник под Rosetta
     asar: { unpack: buildAsarUnpackGlobExpression() },
     buildVersion: CONFIG.appMetadata.version,
     derefSymlinks: false,
