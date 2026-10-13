@@ -21,6 +21,14 @@ name: Сборка Atom Lite
 # <stdio.h> не парсится (_stdio.h:318: error: expected ')'). Поэтому обе
 # задачи переключаются на Xcode 16.2, где бага ещё нет.
 #
+# ── Про заголовки Electron ─────────────────────────────────────────────────
+# apm передаёт node-gyp адрес заголовков https://atom.io/download/electron —
+# домен мёртв: вместо архива приходит HTML-страница, и сборка нативных
+# модулей падает на распаковке tar. Поэтому заголовки заранее кладутся
+# в кэш node-gyp (~/.node-gyp/11.5.0), node-gyp просят пользоваться кэшем,
+# а ATOM_ELECTRON_URL переопределён на рабочий artifacts.electronjs.org
+# (ровно так же сделано в живом форке — Pulsar, репозиторий pulsar-edit/ppm).
+#
 # Отсюда две задачи:
 #   · x64   — заведомо рабочий путь, повторяет конфигурацию оригинального CI.
 #             Приложение соберётся интеловским и запустится через Rosetta 2.
@@ -48,6 +56,10 @@ jobs:
       # Собирать нативные модули из исходников, а не брать готовые бинарники:
       # готовые собраны под другую ABI и не подойдут для Electron 11.5.0.
       npm_config_build_from_source: 'true'
+      # Адрес заголовков Electron для apm (иначе — мёртвый atom.io).
+      ATOM_ELECTRON_URL: https://artifacts.electronjs.org/headers/dist
+      # Разрешить node-gyp брать заголовки из готового кэша ~/.node-gyp.
+      npm_config_ensure: 'true'
 
     steps:
       - name: Клонирование
@@ -90,6 +102,44 @@ jobs:
           echo "Python:       $(python3 --version)"
           echo "Целевая арх.: $npm_config_arch"
           sw_vers
+
+      # node-gyp скачивает заголовки Electron с адреса, который ему передал
+      # apm. apm 2.6.2 по умолчанию указывает на мёртвый сайт:
+      # https://atom.io/download/electron — вместо архива приходит HTML-страница,
+      # и сборка падает на распаковке tar. Кладём заголовки в кэш заранее.
+      - name: Заголовки Electron 11.5.0 в кэш node-gyp
+        run: |
+          set -euo pipefail
+          VDIR="$HOME/.node-gyp/11.5.0"
+          mkdir -p "$VDIR"
+          BASE="${ATOM_ELECTRON_URL:-https://artifacts.electronjs.org/headers/dist}"
+          echo "Основная ссылка: $BASE/v11.5.0/node-v11.5.0-headers.tar.gz"
+          curl -sSL -o /dev/null -w '  HTTP %{http_code} → %{url_effective}\n' \
+            "$BASE/v11.5.0/node-v11.5.0-headers.tar.gz" || true
+
+          for url in \
+            "$BASE/v11.5.0/node-v11.5.0-headers.tar.gz" \
+            "https://electronjs.org/headers/v11.5.0/node-v11.5.0-headers.tar.gz" \
+            "https://artifacts.electronjs.org/headers/dist/v11.5.0/node-v11.5.0-darwin-x64.tar.gz" \
+            "https://artifacts.electronjs.org/headers/dist/v11.5.0/node-v11.5.0-darwin-arm64.tar.gz" \
+          ; do
+            echo "Пробую: $url"
+            if curl -fsSL --retry 2 --connect-timeout 20 -o /tmp/node-headers.tgz "$url" \
+               && tar -tzf /tmp/node-headers.tgz >/dev/null 2>&1; then
+              rm -rf "$VDIR"; mkdir -p "$VDIR"
+              tar -xzf /tmp/node-headers.tgz --strip-components=1 -C "$VDIR"
+              if [ -f "$VDIR/include/node/node.h" ]; then
+                echo 9 > "$VDIR/installVersion"
+                echo "✓ Заголовки на месте, файлов .h: $(find "$VDIR" -name '*.h' | wc -l | tr -d ' ')"
+                exit 0
+              fi
+              echo "…  в архиве нет include/node/node.h"
+            else
+              echo "…  не скачалось"
+            fi
+          done
+          echo "::error title=headers::Заголовки Electron 11.5.0 не скачались ни с одного зеркала"
+          exit 1
 
       - name: Bootstrap
         id: bootstrap
@@ -187,6 +237,10 @@ jobs:
 
     env:
       npm_config_build_from_source: 'true'
+      # Адрес заголовков Electron для apm (иначе — мёртвый atom.io).
+      ATOM_ELECTRON_URL: https://artifacts.electronjs.org/headers/dist
+      # Разрешить node-gyp брать заголовки из готового кэша ~/.node-gyp.
+      npm_config_ensure: 'true'
 
     steps:
       - name: Клонирование
@@ -218,6 +272,40 @@ jobs:
           echo "DEVELOPER_DIR: $(xcode-select -p)"
           xcodebuild -version
           echo "SDK: $(xcrun --show-sdk-version)"
+
+      - name: Заголовки Electron 11.5.0 в кэш node-gyp
+        run: |
+          set -euo pipefail
+          VDIR="$HOME/.node-gyp/11.5.0"
+          mkdir -p "$VDIR"
+          BASE="${ATOM_ELECTRON_URL:-https://artifacts.electronjs.org/headers/dist}"
+          echo "Основная ссылка: $BASE/v11.5.0/node-v11.5.0-headers.tar.gz"
+          curl -sSL -o /dev/null -w '  HTTP %{http_code} → %{url_effective}\n' \
+            "$BASE/v11.5.0/node-v11.5.0-headers.tar.gz" || true
+
+          for url in \
+            "$BASE/v11.5.0/node-v11.5.0-headers.tar.gz" \
+            "https://electronjs.org/headers/v11.5.0/node-v11.5.0-headers.tar.gz" \
+            "https://artifacts.electronjs.org/headers/dist/v11.5.0/node-v11.5.0-darwin-x64.tar.gz" \
+            "https://artifacts.electronjs.org/headers/dist/v11.5.0/node-v11.5.0-darwin-arm64.tar.gz" \
+          ; do
+            echo "Пробую: $url"
+            if curl -fsSL --retry 2 --connect-timeout 20 -o /tmp/node-headers.tgz "$url" \
+               && tar -tzf /tmp/node-headers.tgz >/dev/null 2>&1; then
+              rm -rf "$VDIR"; mkdir -p "$VDIR"
+              tar -xzf /tmp/node-headers.tgz --strip-components=1 -C "$VDIR"
+              if [ -f "$VDIR/include/node/node.h" ]; then
+                echo 9 > "$VDIR/installVersion"
+                echo "✓ Заголовки на месте, файлов .h: $(find "$VDIR" -name '*.h' | wc -l | tr -d ' ')"
+                exit 0
+              fi
+              echo "…  в архиве нет include/node/node.h"
+            else
+              echo "…  не скачалось"
+            fi
+          done
+          echo "::error title=headers::Заголовки Electron 11.5.0 не скачались ни с одного зеркала"
+          exit 1
 
       - name: Bootstrap (под x64 — так apm ставится без ошибок)
         id: bootstrap
@@ -265,7 +353,7 @@ jobs:
               --runtime=electron \
               --target=11.5.0 \
               --arch=arm64 \
-              --dist-url=https://electronjs.org/headers \
+              --dist-url=https://artifacts.electronjs.org/headers/dist \
               --build-from-source 2>&1 | tee rebuild.log
           exit ${PIPESTATUS[0]}
 
