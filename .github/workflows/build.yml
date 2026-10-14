@@ -58,6 +58,16 @@ on:
   push:
     branches: ['**']
   workflow_dispatch:
+    inputs:
+      # Кнопка «Run workflow» в интерфейсе GitHub. Обычная сборка отчёты не
+      # коммитит — иначе каждый push оставлял бы в истории мусор. А при запуске
+      # вручную с этой галочкой вес и списки модулей сохраняются в .ci-logs:
+      # из песочницы артефакты GitHub не скачиваются, а логи job-ов снаружи не
+      # читаются вообще.
+      save-report:
+        description: 'Сохранить отчёт (вес, списки модулей) в .ci-logs'
+        type: boolean
+        default: false
 
 # Нужно, чтобы при падении сборки CI мог сохранить логи в репозиторий: обычные
 # логи job'ов недоступны извне, а аннотации ограничены по количеству и приходят
@@ -434,7 +444,7 @@ jobs:
 
 
       - name: Логи для разбора — в репозиторий
-        if: failure()
+        if: failure() || inputs.save-report
         continue-on-error: true
         run: |
           git config user.name "Arena Agent"
@@ -445,7 +455,7 @@ jobs:
           done
           ls -la out/ > .ci-logs/out-listing.txt 2>&1 || true
           git add -f .ci-logs
-          git commit -qm "ci: логи прогона ${{ github.run_id }} [skip ci]"
+          git commit -qm "ci: логи прогона ${{ github.run_id }} [skip ci]" || echo "нечего коммитить"
           git push -q origin HEAD:${{ github.ref_name }}
 
       - name: Отчёт о сборке — в артефакт
