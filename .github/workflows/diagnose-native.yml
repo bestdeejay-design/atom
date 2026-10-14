@@ -1,0 +1,125 @@
+# Временный диагностический workflow: отвечает на один вопрос —
+# почему нативные модули на arm64-сборке получаются x86_64.
+#
+# Гипотеза: gyp-генератор `make` (его node-gyp использует на macOS) не добавляет
+# флаг -arch. Архитектуру определяет сам clang — а clang, запущенный из
+# x64-процесса под Rosetta (наш Node 12), по умолчанию целится в x86_64.
+# Ни npm_config_arch, ни ATOM_ARCH, ни --arch=arm64 на это не влияют.
+#
+# Проверяем: (1) какую арх даёт clang из нативного shell и из node x64,
+# (2) что содержат Makefile-ы от node-gyp, (3) спасают ли флаги -arch в CFLAGS.
+name: Диагностика нативных модулей
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    name: Проба архитектур
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      ATOM_ARCH: arm64
+      npm_config_arch: arm64
+      ATOM_ELECTRON_URL: https://artifacts.electronjs.org/headers/dist
+
+    steps:
+      - name: Клонирование
+        uses: actions/checkout@v4
+
+      - name: Rosetta 2
+        run: sudo softwareupdate --install-rosetta --agree-to-license
+
+      - name: Node.js 12.16.3 (x64, как в сборке)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '12.16.3'
+          architecture: 'x64'
+
+      - name: Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Xcode 16.2
+        run: |
+          for v in 16.2 16.1 16.0; do
+            if [ -d "/Applications/Xcode_$v.app" ]; then
+              sudo xcode-select -s "/Applications/Xcode_$v.app/Contents/Developer"
+              echo "Выбран Xcode $v"
+              break
+            fi
+          done
+
+      - name: Заголовки Electron 11.5.0
+        run: |
+          set -euo pipefail
+          VDIR="$HOME/.node-gyp/11.5.0"
+          rm -rf "$VDIR"; mkdir -p "$VDIR"
+          curl -fsSL --retry 2 -o /tmp/node-headers.tgz \
+            "$ATOM_ELECTRON_URL/v11.5.0/node-v11.5.0-headers.tar.gz"
+          tar -xzf /tmp/node-headers.tgz --strip-components=1 -C "$VDIR"
+          echo 9 > "$VDIR/installVersion"
+          echo "заголовков: $(find "$VDIR" -name '*.h' | wc -l | tr -d ' ')"
+
+      - name: Тест 1 — чей clang
+        run: |
+          echo "uname -m:        $(uname -m)"
+          echo "node:            $(node --version) / process.arch=$(node -p 'process.arch')"
+          echo
+          printf 'int main(void){return 0;}\n' > /tmp/t.c
+          clang -x c /tmp/t.c -o /tmp/from-shell && echo "clang из shell:  $(lipo -archs /tmp/from-shell)"
+          node -e "require('child_process').execSync('clang -x c /tmp/t.c -o /tmp/from-node')"
+          echo "clang из node:   $(lipo -archs /tmp/from-node)"
+          echo
+          echo "clang -v:"
+          clang -v 2>&1 | grep -i "target\|InstalledDir" || true
+
+      - name: Тест 2 — npm install с --arch=arm64 (как это делает apm)
+        continue-on-error: true
+        run: |
+          set +e
+          rm -rf /tmp/t2 && mkdir -p /tmp/t2 && cd /tmp/t2
+          printf '{"name":"t2","version":"1.0.0","dependencies":{"tree-sitter-json":"0.19.0"}}' > package.json
+          npm install --loglevel=error \
+            --target=11.5.0 --disturl="$ATOM_ELECTRON_URL" --runtime=electron --arch=arm64 2>&1 | tail -5
+          echo "--- результат ---"
+          find . -name '*.node' | while IFS= read -r f; do echo "$(lipo -archs "$f" 2>/dev/null || echo '?') $f"; done
+          echo "--- есть ли -arch в Makefile ---"
+          grep -c -- "-arch" build/Makefile 2>/dev/null || echo "Makefile не найден"
+
+      - name: Тест 3 — то же, но с -arch arm64 в CFLAGS/CXXFLAGS/LDFLAGS
+        continue-on-error: true
+        run: |
+          set +e
+          rm -rf /tmp/t3 && mkdir -p /tmp/t3 && cd /tmp/t3
+          printf '{"name":"t3","version":"1.0.0","dependencies":{"tree-sitter-json":"0.19.0"}}' > package.json
+          CFLAGS="-arch arm64" CXXFLAGS="-arch arm64" LDFLAGS="-arch arm64" \
+            npm install --loglevel=error \
+            --target=11.5.0 --disturl="$ATOM_ELECTRON_URL" --runtime=electron --arch=arm64 2>&1 | tail -5
+          echo "--- результат ---"
+          find . -name '*.node' | while IFS= read -r f; do echo "$(lipo -archs "$f" 2>/dev/null || echo '?') $f"; done
+
+      - name: Тест 4 — node-gyp напрямую, что он пишет в Makefile
+        continue-on-error: true
+        run: |
+          set +e
+          rm -rf /tmp/t4 && mkdir -p /tmp/t4 && cd /tmp/t4
+          npm install --no-save --loglevel=error node-gyp@5.1.0 2>&1 | tail -2
+          cat > binding.gyp <<'EOF'
+          { "targets": [ { "target_name": "probe", "sources": [ "probe.c" ] } ] }
+          EOF
+          echo 'void probe(void){}' > probe.c
+          ./node_modules/.bin/node-gyp configure --arch=arm64 \
+            --target=11.5.0 --disturl="$ATOM_ELECTRON_URL" --runtime=electron 2>&1 | tail -3
+          echo "--- target_arch в Makefile (строк с arch) ---"
+          grep -c "arch" build/Makefile 2>/dev/null || echo "нет"
+          echo "--- сборка ---"
+          ./node_modules/.bin/node-gyp build --arch=arm64 2>&1 | tail -3
+          for f in build/Release/probe.node build/Release/obj.target/probe/probe.o; do
+            [ -f "$f" ] && echo "$(lipo -archs "$f") $f"
+          done
+
+      - name: Итог
+        if: always()
+        run: echo "готово — смотреть вывод шагов выше"
