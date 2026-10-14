@@ -147,6 +147,22 @@ jobs:
           echo "::error title=headers::Заголовки Electron 11.5.0 не скачались ни с одного зеркала"
           exit 1
 
+      # vscode-ripgrep 1.9.0 для macOS жёстко качает сборку x86_64 через GitHub
+      # API, а тот без токена отдаёт 403 (лимит запросов на общем раннере).
+      # Кладём нужный архив в кэш пакета заранее — тогда он в сеть не пойдёт.
+      - name: ripgrep под целевую архитектуру
+        run: |
+          node script/lib/prepare-ripgrep.js 2>&1 | tee rg.log
+          CACHE=$(node -p "require('path').join(require('os').tmpdir(),'vscode-ripgrep-cache-1.9.0','ripgrep-v12.1.1-x86_64-apple-darwin.tar.gz')")
+          if [ -f "$CACHE" ]; then
+            echo "::notice title=ripgrep::архив для $npm_config_arch в кэше ($(du -h "$CACHE" | cut -f1)) — в сеть пакет не пойдёт"
+          else
+            echo "::warning title=ripgrep::архива в кэше нет — пакет попробует скачать сам, вероятен 403"
+          fi
+          grep -a "ripgrep:" rg.log | tr -d '\r' | while IFS= read -r l; do
+            echo "::notice title=ripgrep::${l#ripgrep: }"
+          done
+
       - name: Bootstrap
         id: bootstrap
         run: |
@@ -212,6 +228,12 @@ jobs:
           find "$APP" -name 'v8_context_snapshot*' | while IFS= read -r f; do
             echo "::notice title=проверка::$(basename "$f") — $(lipo -archs "$f" 2>/dev/null || echo 'не Mach-O')"
           done
+          RG=$(find "$APP" -type f -name rg | head -1)
+          if [ -n "$RG" ]; then
+            echo "::notice title=ripgrep::$(file -b "$RG")"
+          else
+            echo "::warning title=ripgrep::бинарь rg не найден в приложении"
+          fi
 
       - name: Проверка — архитектура нативных модулей
         if: success()
@@ -339,6 +361,19 @@ jobs:
           echo "::error title=headers::Заголовки Electron 11.5.0 не скачались ни с одного зеркала"
           exit 1
 
+      - name: ripgrep под целевую архитектуру
+        run: |
+          node script/lib/prepare-ripgrep.js 2>&1 | tee rg.log
+          CACHE=$(node -p "require('path').join(require('os').tmpdir(),'vscode-ripgrep-cache-1.9.0','ripgrep-v12.1.1-x86_64-apple-darwin.tar.gz')")
+          if [ -f "$CACHE" ]; then
+            echo "::notice title=ripgrep::архив для $ATOM_ARCH в кэше ($(du -h "$CACHE" | cut -f1)) — в сеть пакет не пойдёт"
+          else
+            echo "::warning title=ripgrep::архива в кэше нет — пакет попробует скачать сам, вероятен 403"
+          fi
+          grep -a "ripgrep:" rg.log | tr -d '\r' | while IFS= read -r l; do
+            echo "::notice title=ripgrep::${l#ripgrep: }"
+          done
+
       - name: Bootstrap (нативные модули под arm64)
         id: bootstrap
         run: |
@@ -403,21 +438,48 @@ jobs:
           find "$APP" -name 'v8_context_snapshot*' | while IFS= read -r f; do
             echo "::notice title=проверка::$(basename "$f") — $(lipo -archs "$f" 2>/dev/null || echo 'не Mach-O')"
           done
+          RG=$(find "$APP" -type f -name rg | head -1)
+          if [ -n "$RG" ]; then
+            echo "::notice title=ripgrep::$(file -b "$RG")"
+          else
+            echo "::warning title=ripgrep::бинарь rg не найден в приложении"
+          fi
           if [ "$ARCHS" != "arm64" ]; then
             echo "::error title=архитектура::ожидался arm64, а получился $ARCHS"
             exit 1
           fi
 
-      - name: Проверка — архитектура нативных модулей
+      - name: Проверка — всё ли действительно arm64
         if: success()
         run: |
           APP="out/Atom.app"
-          BAD=0
+          BAD=$(mktemp)
           find "$APP" -name '*.node' | sort | while IFS= read -r f; do
             A=$(lipo -archs "$f" 2>/dev/null || echo '?')
             echo "::notice title=модуль::$(echo "$f" | sed "s|.*/node_modules/||") → $A"
-            case "$A" in *arm64*) ;; *) echo "::error title=битый модуль::$(basename "$f") собран не под arm64: $A";; esac
+            case "$A" in
+              *arm64*) ;;
+              *) echo "нет" >> "$BAD"
+                 echo "::error title=битый модуль::$(basename "$f") собран не под arm64: $A" ;;
+            esac
           done
+          RG=$(find "$APP" -type f -name rg | head -1)
+          if [ -n "$RG" ]; then
+            RGINFO=$(file -b "$RG")
+            echo "::notice title=ripgrep::rg → $RGINFO"
+            case "$RGINFO" in
+              *arm64*) ;;
+              *) echo "нет" >> "$BAD"
+                 echo "::error title=ripgrep::сборка ripgrep не под arm64: $RGINFO" ;;
+            esac
+          else
+            echo "::warning title=ripgrep::бинарь rg не найден в приложении"
+          fi
+          if [ -s "$BAD" ]; then
+            echo "::error title=итог::в сборке есть компоненты не под arm64"
+            exit 1
+          fi
+          echo "::notice title=итог::все нативные модули и ripgrep собраны под arm64"
 
       - name: Загрузить артефакт
         if: success()
