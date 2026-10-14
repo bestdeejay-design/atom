@@ -204,7 +204,7 @@ macOS arm64, на push и по кнопке. Временная диагност
 |---|---|---|
 | `accessibility-developer-tools` + `devtron` | 30.4 МБ | расширение DevTools для разработки самого Atom; в коде не требуется |
 | предсобранный кэш LESS | 29.5 МБ | ускоритель первого запуска; рабочий кэш живёт в `~/.atom/compile-cache/less` |
-| `mocha`, `chai`, `sinon`, `jasmine-*`, `yargs-unparser`, `mock-spawn` | 19 МБ | нужны только спецификациям; возвращаются `ATOM_LITE_KEEP_TESTS=1` |
+| `mocha`, `chai`, `sinon`, `jasmine-*`, `yargs-unparser`, `mock-spawn` | 19 МБ | нужны только спецификациям; во второй части диеты убраны из зависимостей совсем |
 | `chart.js`, `moment` | 6.1 МБ | не используются ни одним `require` |
 | `electron-osx-sign`, `electron-notarize` | 1.2 МБ | нужны только сборке (`script/lib`) |
 | `winreg`, `fswin`, `winattr` | 0.6 МБ | существуют только для Windows |
