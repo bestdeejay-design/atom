@@ -208,11 +208,31 @@ jobs:
             echo "::error title=context::$l"
           done
 
+      # Отдельная проверка генератора снапшота: если он не работает для этой
+      # архитектуры, лучше узнать об этом до многоминутной сборки.
+      - name: Проверка mksnapshot
+        run: |
+          set +e
+          echo 'var snapshotTest = 1;' > "$RUNNER_TEMP/snapshot-test.js"
+          mkdir -p "$RUNNER_TEMP/mks-out"
+          node script/node_modules/electron-mksnapshot/mksnapshot.js "$RUNNER_TEMP/snapshot-test.js" --output_dir "$RUNNER_TEMP/mks-out" > mksnapshot-test.log 2>&1
+          CODE=$?
+          echo "код возврата mksnapshot: $CODE" >> mksnapshot-test.log
+          ls -la "$RUNNER_TEMP/mks-out" >> mksnapshot-test.log 2>&1
+          if [ -f "$RUNNER_TEMP/mks-out/v8_context_snapshot.bin" ]; then
+            echo "::notice title=mksnapshot::снапшот создан (код $CODE): $(file -b "$RUNNER_TEMP/mks-out/v8_context_snapshot.bin")"
+          else
+            echo "::error title=mksnapshot::снапшот НЕ создан (код $CODE)"
+            tail -12 mksnapshot-test.log | tr -d '\r' | while IFS= read -r l; do
+              echo "::error title=mksnapshot::$l"
+            done
+          fi
+
       - name: Сборка приложения
         id: build
         run: |
           set +e
-          script/build --compress-artifacts 2>&1 | tee build.log
+          script/build --compress-artifacts --no-bootstrap 2>&1 | tee build.log
           CODE=${PIPESTATUS[0]}
           echo "код возврата script/build: $CODE"
           if [ "$CODE" -ne 0 ]; then
@@ -245,7 +265,7 @@ jobs:
           git config user.name "Arena Agent"
           git config user.email "agent@arena.ai"
           mkdir -p .ci-logs
-          for f in build.log bootstrap.log rg.log; do
+          for f in build.log bootstrap.log rg.log mksnapshot-test.log; do
             if [ -f "$f" ]; then cp "$f" ".ci-logs/$f"; fi
           done
           ls -la out/ > .ci-logs/out-listing.txt 2>&1 || true
@@ -258,13 +278,18 @@ jobs:
       - name: Проверка — архитектура и размер
         if: success()
         run: |
-          APP="out/Atom.app"
-          BIN="$APP/Contents/MacOS/Atom"
+          APP=$(ls -d out/*.app 2>/dev/null | head -1)
+          if [ -z "$APP" ]; then
+            echo "::error title=проверка::каталог приложения не найден в out/"
+            ls -la out/ | head -20
+            exit 1
+          fi
+          BIN=$(ls "$APP/Contents/MacOS/"* | head -1)
           echo "::notice title=проверка::бинарник: $(lipo -archs "$BIN")"
-          echo "::notice title=проверка::приложение $(du -sh "$APP" | cut -f1), архив $(ls -lh out/*.zip | awk '{print $5}')"
+          echo "::notice title=проверка::приложение $(du -sh "$APP" | cut -f1), архив: $(ls -lh out/*.zip | awk '{print $9, $5}' | tr '\n' ' ')"
           echo "::notice title=проверка::нативных модулей .node: $(find "$APP" -name '*.node' | wc -l | tr -d ' ')"
           find "$APP" -name 'v8_context_snapshot*' | while IFS= read -r f; do
-            echo "::notice title=проверка::$(basename "$f") — $(lipo -archs "$f" 2>/dev/null || echo 'не Mach-O')"
+            echo "::notice title=снапшот::$(basename "$f") — $(du -h "$f" | cut -f1)"
           done
           RG=$(find "$APP" -type f -name rg | head -1)
           if [ -n "$RG" ]; then
@@ -276,7 +301,7 @@ jobs:
       - name: Проверка — архитектура нативных модулей
         if: success()
         run: |
-          APP="out/Atom.app"
+          APP=$(ls -d out/*.app 2>/dev/null | head -1)
           find "$APP" -name '*.node' | sort | head -14 | while IFS= read -r f; do
             echo "::notice title=модуль::$(echo "$f" | sed "s|.*/node_modules/||") → $(lipo -archs "$f" 2>/dev/null || echo '?')"
           done
@@ -451,11 +476,31 @@ jobs:
             echo "::error title=context::$l"
           done
 
+      # Отдельная проверка генератора снапшота: если он не работает для этой
+      # архитектуры, лучше узнать об этом до многоминутной сборки.
+      - name: Проверка mksnapshot
+        run: |
+          set +e
+          echo 'var snapshotTest = 1;' > "$RUNNER_TEMP/snapshot-test.js"
+          mkdir -p "$RUNNER_TEMP/mks-out"
+          node script/node_modules/electron-mksnapshot/mksnapshot.js "$RUNNER_TEMP/snapshot-test.js" --output_dir "$RUNNER_TEMP/mks-out" > mksnapshot-test.log 2>&1
+          CODE=$?
+          echo "код возврата mksnapshot: $CODE" >> mksnapshot-test.log
+          ls -la "$RUNNER_TEMP/mks-out" >> mksnapshot-test.log 2>&1
+          if [ -f "$RUNNER_TEMP/mks-out/v8_context_snapshot.bin" ]; then
+            echo "::notice title=mksnapshot::снапшот создан (код $CODE): $(file -b "$RUNNER_TEMP/mks-out/v8_context_snapshot.bin")"
+          else
+            echo "::error title=mksnapshot::снапшот НЕ создан (код $CODE)"
+            tail -12 mksnapshot-test.log | tr -d '\r' | while IFS= read -r l; do
+              echo "::error title=mksnapshot::$l"
+            done
+          fi
+
       - name: Сборка приложения под arm64
         id: build
         run: |
           set +e
-          script/build --compress-artifacts 2>&1 | tee build.log
+          script/build --compress-artifacts --no-bootstrap 2>&1 | tee build.log
           CODE=${PIPESTATUS[0]}
           echo "код возврата script/build: $CODE"
           if [ "$CODE" -ne 0 ]; then
@@ -488,7 +533,7 @@ jobs:
           git config user.name "Arena Agent"
           git config user.email "agent@arena.ai"
           mkdir -p .ci-logs
-          for f in build.log bootstrap.log rg.log; do
+          for f in build.log bootstrap.log rg.log mksnapshot-test.log; do
             if [ -f "$f" ]; then cp "$f" ".ci-logs/$f"; fi
           done
           ls -la out/ > .ci-logs/out-listing.txt 2>&1 || true
@@ -499,14 +544,19 @@ jobs:
       - name: Проверка — архитектура и размер
         if: success()
         run: |
-          APP="out/Atom.app"
-          BIN="$APP/Contents/MacOS/Atom"
+          APP=$(ls -d out/*.app 2>/dev/null | head -1)
+          if [ -z "$APP" ]; then
+            echo "::error title=проверка::каталог приложения не найден в out/"
+            ls -la out/ | head -20
+            exit 1
+          fi
+          BIN=$(ls "$APP/Contents/MacOS/"* | head -1)
           ARCHS=$(lipo -archs "$BIN")
           echo "::notice title=проверка::бинарник: $ARCHS"
-          echo "::notice title=проверка::приложение $(du -sh "$APP" | cut -f1), архив $(ls -lh out/*.zip | awk '{print $5}')"
+          echo "::notice title=проверка::приложение $(du -sh "$APP" | cut -f1), архив: $(ls -lh out/*.zip | awk '{print $9, $5}' | tr '\n' ' ')"
           echo "::notice title=проверка::нативных модулей .node: $(find "$APP" -name '*.node' | wc -l | tr -d ' ')"
           find "$APP" -name 'v8_context_snapshot*' | while IFS= read -r f; do
-            echo "::notice title=проверка::$(basename "$f") — $(lipo -archs "$f" 2>/dev/null || echo 'не Mach-O')"
+            echo "::notice title=снапшот::$(basename "$f") — $(du -h "$f" | cut -f1)"
           done
           RG=$(find "$APP" -type f -name rg | head -1)
           if [ -n "$RG" ]; then
@@ -522,7 +572,7 @@ jobs:
       - name: Проверка — всё ли действительно arm64
         if: success()
         run: |
-          APP="out/Atom.app"
+          APP=$(ls -d out/*.app 2>/dev/null | head -1)
           BAD=$(mktemp)
           find "$APP" -name '*.node' | sort | while IFS= read -r f; do
             A=$(lipo -archs "$f" 2>/dev/null || echo '?')

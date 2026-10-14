@@ -131,7 +131,7 @@ function isGzip(filePath) {
   return magic[0] === 0x1f && magic[1] === 0x8b;
 }
 
-module.exports = async function prepareRipgrep() {
+async function prepareRipgrep() {
   if (process.platform !== 'darwin') {
     console.log('ripgrep: подготовка нужна только для macOS — пропускаю');
     return;
@@ -188,6 +188,19 @@ module.exports = async function prepareRipgrep() {
   }
 };
 
+module.exports = prepareRipgrep;
+
 // Экспортируем вспомогательные функции для тестов.
 module.exports.cachePaths = cachePaths;
 module.exports.normalizeArchive = normalizeArchive;
+
+// Скрипт запускается и напрямую — так делает CI перед bootstrap:
+//   node script/lib/prepare-ripgrep.js
+// (Раньше файл только экспортировал функцию, поэтому прямой запуск молча
+//  ничего не делал: ни вывода, ни скачивания.)
+if (require.main === module) {
+  prepareRipgrep().catch(error => {
+    console.error(`ripgrep: непредвиденная ошибка — ${error.stack || error}`);
+    process.exitCode = 1;
+  });
+}
