@@ -1,0 +1,157 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Пять атмосфер joer. Источник — css/themes/*.css и css/tokens.css сайта
+// joer.ru (репозиторий bestdeejay-design/joer). Взято ровно то, что сайт
+// называет своими переменными: фон, поверхности, границы, три ступени текста,
+// акцент, второй акцент и цвет кольца фокуса. Ничего не выдумано.
+//
+// Своё, чего у сайта нет, — два оттенка: свечение окна (glow) и мягкая
+// подложка выбранной строки (wash). Оба выводятся из акцентов атмосферы
+// с той же плотностью, что и --accent-soft на сайте (alpha 0.18 → здесь тише).
+//
+// Атмосфера — это атрибут на <html>, его ставит lib/main.js. Ниже под каждую
+// атмосферу объявлены переменные CSS: LESS считает цвета один раз, а окно
+// обязано менять их мгновенно.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Общее для всех атмосфер ----------------------------------------------------
+
+:root {
+  // Радиусы и расстояния — из tokens.css сайта: 6 / 10 / 16.
+  --joer-radius-xs: 6px;
+  --joer-radius-sm: 10px;
+  --joer-radius-md: 16px;
+
+  // Движение — из tokens.css: 120 мс на отклик, 220 мс на появление.
+  --joer-dur-1: 120ms;
+  --joer-dur-2: 220ms;
+  --joer-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  // Ступени текста и служебное — одинаковы во всех атмосферах.
+  --joer-hover: rgba(255, 255, 255, 0.055);
+  --joer-scrollbar: rgba(255, 255, 255, 0.14);
+  --joer-line: rgba(255, 255, 255, 0.08);
+}
+
+// lounge — неоновый вечер: фиолетовый и аква --------------------------------
+
+.joer-lounge() {
+  --joer-bg: #0b0f1e;
+  --joer-surface: #161d3a;
+  --joer-surface-2: #1d2547;
+  --joer-veil: rgba(22, 29, 58, 0.86);
+  --joer-border: #2c3663;
+  --joer-text: #e9ecff;
+  --joer-muted: #a9b1d8;
+  --joer-faint: #7b83a6;
+  --joer-accent: #8b7cf6;
+  --joer-accent-2: #5eead4;
+  --joer-accent-ink: #0b0f1e;
+  --joer-ring: #a5b4fc;
+  --joer-wash: rgba(139, 124, 246, 0.18);
+  --joer-glow-a: rgba(139, 124, 246, 0.1);
+  --joer-glow-b: rgba(94, 234, 212, 0.06);
+}
+
+// club — ночной клуб: маджента и циан ----------------------------------------
+
+.joer-club() {
+  --joer-bg: #0a0612;
+  --joer-surface: #1a0e2c;
+  --joer-surface-2: #22123a;
+  --joer-veil: rgba(26, 14, 44, 0.86);
+  --joer-border: #3a1f5c;
+  --joer-text: #f7ecff;
+  --joer-muted: #c5a9de;
+  --joer-faint: #9379ae;
+  --joer-accent: #ff2ec4;
+  --joer-accent-2: #22d3ee;
+  --joer-accent-ink: #17021c;
+  --joer-ring: #ff8ae0;
+  --joer-wash: rgba(255, 46, 196, 0.16);
+  --joer-glow-a: rgba(255, 46, 196, 0.09);
+  --joer-glow-b: rgba(34, 211, 238, 0.06);
+}
+
+// romantic — тёплый вечер: роза и янтарь --------------------------------------
+
+.joer-romantic() {
+  --joer-bg: #1a0f14;
+  --joer-surface: #2a1520;
+  --joer-surface-2: #331a27;
+  --joer-veil: rgba(42, 21, 32, 0.86);
+  --joer-border: #4d2a3a;
+  --joer-text: #ffeff5;
+  --joer-muted: #ddb8c6;
+  --joer-faint: #ab8695;
+  --joer-accent: #f472b6;
+  --joer-accent-2: #fbbf24;
+  --joer-accent-ink: #2a0714;
+  --joer-ring: #f9a8d4;
+  --joer-wash: rgba(244, 114, 182, 0.18);
+  --joer-glow-a: rgba(244, 114, 182, 0.1);
+  --joer-glow-b: rgba(251, 191, 36, 0.06);
+}
+
+// space — космос: синий и лёд -------------------------------------------------
+
+.joer-space() {
+  --joer-bg: #05070f;
+  --joer-surface: #0e152c;
+  --joer-surface-2: #131c38;
+  --joer-veil: rgba(14, 21, 44, 0.86);
+  --joer-border: #233056;
+  --joer-text: #eaf2ff;
+  --joer-muted: #a8b8da;
+  --joer-faint: #7a8baf;
+  --joer-accent: #60a5fa;
+  --joer-accent-2: #7dd3fc;
+  --joer-accent-ink: #04070f;
+  --joer-ring: #93c5fd;
+  --joer-wash: rgba(96, 165, 250, 0.18);
+  --joer-glow-a: rgba(96, 165, 250, 0.1);
+  --joer-glow-b: rgba(125, 211, 252, 0.06);
+}
+
+// velvet — велюр и золото: бордо и золото -------------------------------------
+
+.joer-velvet() {
+  --joer-bg: #150a0c;
+  --joer-surface: #241014;
+  --joer-surface-2: #2c1418;
+  --joer-veil: rgba(36, 16, 20, 0.86);
+  --joer-border: #4a252b;
+  --joer-text: #fdeee4;
+  --joer-muted: #dabaa9;
+  --joer-faint: #a8877b;
+  --joer-accent: #d4a24e;
+  --joer-accent-2: #c9536b;
+  --joer-accent-ink: #1a0b06;
+  --joer-ring: #e7c37f;
+  --joer-wash: rgba(212, 162, 78, 0.18);
+  --joer-glow-a: rgba(212, 162, 78, 0.1);
+  --joer-glow-b: rgba(201, 83, 107, 0.07);
+}
+
+// До загрузки темы и по умолчанию — lounge (так же устроен сайт: его
+// tokens.css объявляет lounge базовой палитрой и фолбэком).
+
+:root,
+html[data-joer-atmosphere="lounge"] {
+  .joer-lounge();
+}
+
+html[data-joer-atmosphere="club"] {
+  .joer-club();
+}
+
+html[data-joer-atmosphere="romantic"] {
+  .joer-romantic();
+}
+
+html[data-joer-atmosphere="space"] {
+  .joer-space();
+}
+
+html[data-joer-atmosphere="velvet"] {
+  .joer-velvet();
+}

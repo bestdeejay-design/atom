@@ -1,0 +1,66 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Договор темы с остальными пакетами Atom.
+//
+// Здесь настоящие цвета, а не переменные CSS: чужие стили считают из них
+// оттенки (fade(@syntax-color-added, 20%)), а LESS не умеет арифметику
+// над var(). Значения — атмосфера lounge, базовая в joer.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Общее ----------------------------------------------------------------------
+
+@syntax-text-color: #e9ecff;
+@syntax-cursor-color: #8b7cf6;
+@syntax-selection-color: rgba(139, 124, 246, 0.18);
+@syntax-selection-flash-color: #5eead4;
+@syntax-background-color: #0b0f1e;
+
+// Направляющие ---------------------------------------------------------------
+
+@syntax-wrap-guide-color: rgba(255, 255, 255, 0.08);
+@syntax-indent-guide-color: rgba(255, 255, 255, 0.08);
+@syntax-invisible-character-color: rgba(255, 255, 255, 0.16);
+
+// Поиск ----------------------------------------------------------------------
+
+@syntax-result-marker-color: rgba(139, 124, 246, 0.24);
+@syntax-result-marker-color-selected: #5eead4;
+
+// Номера строк ---------------------------------------------------------------
+
+@syntax-gutter-text-color: #7b83a6;
+@syntax-gutter-text-color-selected: #e9ecff;
+@syntax-gutter-background-color: #0b0f1e;
+@syntax-gutter-background-color-selected: rgba(255, 255, 255, 0.035);
+
+// Смысловые цвета (их считают чужие пакеты, например панель git-diff) --------
+
+@syntax-color-renamed: #7dd3fc;
+@syntax-color-added: #4ade80;
+@syntax-color-modified: #fbbf24;
+@syntax-color-removed: #fb7185;
+
+// Цвета сущностей ------------------------------------------------------------
+
+@syntax-color-variable: #e9ecff;
+@syntax-color-constant: #d8a06a;
+@syntax-color-property: #a9b1d8;
+@syntax-color-value: #c9b98f;
+@syntax-color-function: #5eead4;
+@syntax-color-method: @syntax-color-function;
+@syntax-color-class: #c9b98f;
+@syntax-color-keyword: #8b7cf6;
+@syntax-color-tag: #8b7cf6;
+@syntax-color-attribute: #a9b1d8;
+@syntax-color-import: #c9b98f;
+@syntax-color-snippet: #c9b98f;
+
+// Шрифт для чисел в полях номера строк: моноширинный, системный.
+@font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+  "Liberation Mono", monospace;
+
+// Цвета состояний: нужны самой подсветке (разметка, diff) и обязаны быть
+// здесь, потому что тема подсветки может работать и с чужим интерфейсом.
+@text-color-error: #fb7185;
+@text-color-warning: #fbbf24;
+@text-color-success: #4ade80;
+@text-color-info: #7dd3fc;

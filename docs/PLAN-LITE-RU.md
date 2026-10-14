@@ -63,14 +63,16 @@
 **Стоит оставить:** `javascript`, `html`, `css`, `json`, `gfm` (markdown),
 `yaml`, `xml`, `shellscript`, `text`, `todo`, `hyperlink`, `python`, `c`, `rust`
 
-### 10 тем → 2
+### 10 тем → 2 (решено в Волне 4)
 
-Сейчас грузятся: `atom-dark-ui`, `atom-light-ui`, `one-dark-ui`, `one-light-ui`,
-`atom-dark-syntax`, `atom-light-syntax`, `one-dark-syntax`, `one-light-syntax`,
-`base16-tomorrow-dark-theme`, `base16-tomorrow-light-theme`, `solarized-*`.
+Сейчас грузятся по умолчанию **свои** темы: **`dajet-ui` + `dajet-syntax`**
+(см. `docs/THEMES-RU.md`), вторая пара — `joer` — выбирается в настройках;
+у неё пять атмосфер.
 
-Для «стильно и легко» достаточно двух: **`one-dark-ui` + `one-dark-syntax`**
-(или одну свою собственную — см. Этап 3).
+Прежние 12 тем (`one-dark`, `one-light`, `atom-dark`, `atom-light`, `base16`,
+`solarized`) остались в сборке: вместе они весят 1.1 МБ, а редактор без сети
+не может добрать тему извне — поэтому они остаются выбором. Если владелец
+решит их снять, это отдельное решение «диеты».
 
 ### Пакеты-кандидаты на удаление
 
@@ -96,7 +98,8 @@
 
 Когда база облегчена — можно делать своё оформление:
 
-- своя тема в `packages/` (проще всего форкнуть `one-dark-ui`)
+- ~~своя тема в `packages/`~~ — сделано в Волне 4: четыре пакета тем
+  (`dajet-ui`, `dajet-syntax`, `joer-ui`, `joer-syntax`), см. `docs/THEMES-RU.md`
 - убрать лишние элементы status-bar
 - уменьшить высоту строки табов, скругления, тени
 - свой `Info.plist` и иконка (сейчас `resources/mac/atom-Info.plist`, иконки в `resources/app-icons/`)

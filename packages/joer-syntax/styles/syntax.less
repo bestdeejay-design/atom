@@ -1,0 +1,201 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Подсветка joer.
+//
+// Замысел: цвет атмосферы — на ключевом. Ключевые слова, функции и теги
+// берут его напрямую; строки, числа и типы набраны тёплыми спокойными
+// тонами, которые одинаково читаются во всех пяти атмосферах — от фиолетовой
+// lounge до золотой velvet. Комментарии — самая тихая ступень атмосферы.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Тёплые тона содержания: не зависят от атмосферы нарочно — иначе в club
+// страница кода стала бы малиновой целиком. Поэтому объявлены здесь, а не
+// в атмосферах: если однажды захочется их подвинуть, атмосфера перекроет их
+// своим блоком (её селектор специфичнее).
+:root {
+  --joer-string: #c9b98f;
+  --joer-number: #d8a06a;
+  --joer-type: #c9b98f;
+  --joer-calm: #a9b1d8;
+}
+
+.syntax--comment {
+  color: var(--joer-faint, #7b83a6);
+  font-style: normal;
+}
+
+.syntax--string {
+  color: var(--joer-string);
+
+  &.syntax--regexp {
+    color: var(--joer-string);
+  }
+}
+
+.syntax--constant {
+  color: var(--joer-number);
+
+  &.syntax--character,
+  &.syntax--numeric,
+  &.syntax--boolean,
+  &.syntax--language,
+  &.syntax--other {
+    color: var(--joer-number);
+  }
+}
+
+.syntax--keyword {
+  color: var(--joer-accent, #8b7cf6);
+
+  &.syntax--control,
+  &.syntax--operator,
+  &.syntax--other.syntax--special-method,
+  &.syntax--other.syntax--unit {
+    color: var(--joer-accent, #8b7cf6);
+  }
+}
+
+.syntax--storage,
+.syntax--modifier,
+.syntax--other.syntax--modifier {
+  color: var(--joer-accent, #8b7cf6);
+}
+
+.syntax--entity {
+  &.syntax--name {
+    color: inherit;
+
+    &.syntax--class,
+    &.syntax--type,
+    &.syntax--section {
+      color: var(--joer-type);
+    }
+
+    &.syntax--function {
+      color: var(--joer-accent-2, #5eead4);
+    }
+
+    &.syntax--tag {
+      color: var(--joer-accent, #8b7cf6);
+    }
+  }
+
+  &.syntax--other {
+    &.syntax--attribute-name {
+      color: var(--joer-calm);
+    }
+
+    &.syntax--inherited-class {
+      color: var(--joer-type);
+    }
+  }
+}
+
+.syntax--support {
+  color: inherit;
+
+  &.syntax--function {
+    color: var(--joer-accent-2, #5eead4);
+  }
+
+  &.syntax--class,
+  &.syntax--type {
+    color: var(--joer-type);
+  }
+
+  &.syntax--constant {
+    color: var(--joer-number);
+  }
+}
+
+.syntax--variable {
+  color: inherit;
+
+  &.syntax--parameter {
+    color: inherit;
+  }
+}
+
+.syntax--property-name,
+.syntax--variable.syntax--property,
+.syntax--variable.syntax--other.syntax--property {
+  color: var(--joer-calm);
+}
+
+.syntax--punctuation {
+  color: var(--joer-muted, #a9b1d8);
+
+  &.syntax--definition {
+    color: var(--joer-muted, #a9b1d8);
+  }
+}
+
+.syntax--meta {
+  color: inherit;
+
+  &.syntax--tag {
+    color: var(--joer-muted, #a9b1d8);
+  }
+}
+
+.syntax--none {
+  color: inherit;
+}
+
+.syntax--invalid,
+.syntax--invalid.syntax--illegal,
+.syntax--invalid.syntax--deprecated {
+  color: @text-color-error;
+}
+
+// Разметка (Markdown) и diff -------------------------------------------------
+
+.syntax--markup {
+  &.syntax--heading {
+    color: var(--joer-text, #e9ecff);
+    font-weight: 600;
+
+    .syntax--punctuation.syntax--definition.syntax--heading {
+      color: var(--joer-accent, #8b7cf6);
+    }
+  }
+
+  &.syntax--bold {
+    color: inherit;
+    font-weight: 700;
+  }
+
+  &.syntax--italic {
+    color: inherit;
+    font-style: italic;
+  }
+
+  &.syntax--underline,
+  &.syntax--link {
+    color: var(--joer-accent-2, #5eead4);
+  }
+
+  &.syntax--quote {
+    color: var(--joer-faint, #7b83a6);
+  }
+
+  &.syntax--raw,
+  &.syntax--code {
+    color: var(--joer-string);
+  }
+
+  &.syntax--list {
+    color: var(--joer-accent, #8b7cf6);
+  }
+
+  &.syntax--inserted {
+    color: @text-color-success;
+  }
+
+  &.syntax--deleted {
+    color: @text-color-error;
+  }
+
+  &.syntax--changed {
+    color: @text-color-warning;
+  }
+}

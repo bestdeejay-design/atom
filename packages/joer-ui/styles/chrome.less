@@ -1,0 +1,390 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Окно «joer»: из чего оно складывается.
+//
+// Из принципов joer (docs/DESIGN.md сайта):
+//   · тёмная основа всегда;
+//   · «сцена, а не фон» — но в редакторе сцены не место: вместо живой сцены
+//     за панелями лежит её неподвижный кадр, два мягких свечения цвета
+//     атмосферы;
+//   · тишина в интерфейсе — минимум границ и подписей;
+//   · числа и тайминги — моноширинно (это видно в строке состояния);
+//   · при «Reduce Motion» движение выключается совсем.
+//
+// Всё цветное — через var(--joer-*): атмосфера обязана меняться мгновенно.
+// Правила начинаются с .theme-joer-ui — этот класс Atom вешает на рабочую
+// область, и он же решает спор с правилами чужих пакетов.
+// ─────────────────────────────────────────────────────────────────────────────
+
+.joer-move() {
+  transition: color var(--joer-dur-1) var(--joer-ease),
+    background-color var(--joer-dur-1) var(--joer-ease),
+    border-color var(--joer-dur-1) var(--joer-ease),
+    box-shadow var(--joer-dur-1) var(--joer-ease);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+// Окно и сцена ---------------------------------------------------------------
+
+atom-workspace.theme-joer-ui {
+  background-color: var(--joer-bg);
+  color: var(--joer-text);
+  font-family: @font-family;
+  font-size: 13px;
+}
+
+// Неподвижный кадр сцены: два свечения — цвета атмосферы и её второго
+// акцента. Включается и выключается настройкой темы.
+html[data-joer-ambient="on"] atom-workspace.theme-joer-ui {
+  background-image: radial-gradient(
+      70% 55% at 8% -10%,
+      var(--joer-glow-a),
+      transparent 70%
+    ),
+    radial-gradient(55% 45% at 105% 5%, var(--joer-glow-b), transparent 65%);
+}
+
+.theme-joer-ui .atom-workspace-axis,
+.theme-joer-ui .pane,
+.theme-joer-ui .pane-item,
+.theme-joer-ui .item-views {
+  background-color: transparent;
+}
+
+.theme-joer-ui .pane .item-views .pane-item {
+  background-color: var(--joer-bg);
+}
+
+// Панели и доки: поверхность чуть выше фона, сквозь неё видно свечение ------
+
+.theme-joer-ui .atom-dock-mask,
+.theme-joer-ui .atom-dock .atom-dock-inner {
+  background-color: transparent;
+}
+
+.theme-joer-ui atom-panel,
+.theme-joer-ui .tool-panel {
+  background-color: var(--joer-veil);
+  border-color: var(--joer-line);
+}
+
+.theme-joer-ui atom-panel.modal,
+.theme-joer-ui atom-panel .atom-panel-container {
+  background-color: var(--joer-surface);
+}
+
+.theme-joer-ui .atom-dock-toggle-button .atom-dock-toggle-button-inner {
+  background-color: var(--joer-surface);
+  border: 1px solid var(--joer-border);
+  border-radius: var(--joer-radius-sm);
+  color: var(--joer-muted);
+}
+
+// Вкладки --------------------------------------------------------------------
+
+.theme-joer-ui .tab-bar {
+  background-color: transparent;
+  box-shadow: inset 0 -1px 0 var(--joer-line);
+}
+
+.theme-joer-ui .tab-bar .tab {
+  background-color: transparent;
+  border-left: 1px solid transparent;
+  color: var(--joer-muted);
+  font-size: 13px;
+  .joer-move();
+
+  &:hover {
+    background-color: var(--joer-hover);
+    color: var(--joer-text);
+  }
+
+  // Текущая вкладка — как активная карточка на сайте: подсвечена своим
+  // акцентом. Не рамкой «дыхания» (это движение — его тут не будет),
+  // а линией по нижнему краю и светом поверхности.
+  &.active {
+    background-color: var(--joer-bg);
+    color: var(--joer-text);
+    box-shadow: inset 0 -2px 0 var(--joer-accent);
+
+    &:hover {
+      background-color: var(--joer-bg);
+    }
+  }
+
+  &.modified .close-icon {
+    color: var(--joer-accent-2);
+    opacity: 1;
+  }
+
+  .close-icon {
+    color: var(--joer-faint);
+    .joer-move();
+
+    &:hover {
+      color: var(--joer-text);
+    }
+  }
+}
+
+// Дерево файлов --------------------------------------------------------------
+
+.theme-joer-ui .tree-view {
+  background-color: var(--joer-veil);
+  color: var(--joer-text);
+  font-size: 13px;
+
+  .project-root > .header .name {
+    color: var(--joer-muted);
+    font-weight: 600;
+  }
+
+  .entry {
+    line-height: 26px;
+    border-radius: var(--joer-radius-xs);
+    .joer-move();
+
+    .name {
+      color: var(--joer-text);
+    }
+
+    &:hover {
+      background-color: var(--joer-hover);
+    }
+
+    &.status-ignored .name,
+    &.status-ignored .header .name {
+      color: var(--joer-faint);
+    }
+  }
+
+  .selected:before {
+    background-color: var(--joer-wash);
+    border-radius: var(--joer-radius-xs);
+  }
+
+  &:focus {
+    .selected.list-item > .name,
+    .selected.list-nested-item > .list-item > .name,
+    .selected.list-nested-item > .header .name {
+      color: var(--joer-text);
+    }
+  }
+}
+
+// Строка состояния: числа — моноширинно (так решено в joer) ------------------
+
+.theme-joer-ui .status-bar {
+  background-color: var(--joer-veil);
+  color: var(--joer-muted);
+  box-shadow: inset 0 1px 0 var(--joer-line);
+  font-family: @font-mono;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+
+  a,
+  .status-bar-item {
+    color: var(--joer-muted);
+    .joer-move();
+  }
+
+  a:hover,
+  .status-bar-item:hover {
+    color: var(--joer-text);
+  }
+}
+
+// Списки, кнопки, поля -------------------------------------------------------
+
+.theme-joer-ui .list-group {
+  background-color: transparent;
+
+  li {
+    border-color: var(--joer-line);
+    color: var(--joer-text);
+    .joer-move();
+  }
+
+  li.selected,
+  .selected {
+    background-color: var(--joer-wash);
+    color: var(--joer-text);
+  }
+}
+
+.theme-joer-ui .btn {
+  background-color: var(--joer-surface);
+  background-image: none;
+  border: 1px solid var(--joer-border);
+  border-radius: var(--joer-radius-sm);
+  color: var(--joer-text);
+  box-shadow: none;
+  text-shadow: none;
+  .joer-move();
+
+  &:hover,
+  &:focus {
+    background-color: var(--joer-surface-2);
+    color: var(--joer-text);
+  }
+
+  &:focus {
+    box-shadow: 0 0 0 2px var(--joer-ring);
+  }
+
+  &:active,
+  &.selected,
+  &.btn-primary {
+    background-color: var(--joer-accent);
+    border-color: transparent;
+    color: var(--joer-accent-ink);
+  }
+}
+
+.theme-joer-ui atom-text-editor[mini],
+.theme-joer-ui input[type="text"],
+.theme-joer-ui input[type="search"],
+.theme-joer-ui select {
+  background-color: var(--joer-surface);
+  border: 1px solid var(--joer-border);
+  border-radius: var(--joer-radius-sm);
+  color: var(--joer-text);
+  box-shadow: none;
+}
+
+.theme-joer-ui atom-text-editor[mini].is-focused,
+.theme-joer-ui input:focus {
+  border-color: var(--joer-ring);
+  box-shadow: 0 0 0 2px var(--joer-wash);
+}
+
+.theme-joer-ui .select-list {
+  background-color: var(--joer-surface);
+
+  ol.list-group {
+    background-color: var(--joer-surface);
+
+    li {
+      color: var(--joer-muted);
+      .joer-move();
+
+      &.selected {
+        background-color: var(--joer-wash);
+        color: var(--joer-text);
+      }
+
+      .secondary-line {
+        color: var(--joer-faint);
+      }
+    }
+  }
+}
+
+// Настройки ------------------------------------------------------------------
+
+.theme-joer-ui .settings-view {
+  background-color: var(--joer-bg);
+  color: var(--joer-text);
+
+  .panels .panel {
+    background-color: var(--joer-surface);
+    border: 1px solid var(--joer-border);
+    border-radius: var(--joer-radius-md);
+    box-shadow: none;
+
+    .panel-heading {
+      background-color: var(--joer-surface-2);
+      border-radius: var(--joer-radius-md) var(--joer-radius-md) 0 0;
+      color: var(--joer-text);
+    }
+  }
+
+  .setting-description,
+  .section .section-container,
+  .package-card .package-description {
+    color: var(--joer-muted);
+  }
+
+  .theme-card,
+  .package-card {
+    background-color: var(--joer-surface);
+    border: 1px solid var(--joer-border);
+    border-radius: var(--joer-radius-md);
+    box-shadow: none;
+
+    &.active {
+      border-color: var(--joer-accent);
+    }
+  }
+}
+
+// Сообщения, подсказки -------------------------------------------------------
+
+.theme-joer-ui .notifications .notification,
+.theme-joer-ui .notification {
+  background-color: var(--joer-surface);
+  border: 1px solid var(--joer-border);
+  border-radius: var(--joer-radius-md);
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.7);
+  color: var(--joer-text);
+
+  &.error {
+    border-color: @text-color-error;
+  }
+
+  &.warning {
+    border-color: @text-color-warning;
+  }
+
+  &.success {
+    border-color: @text-color-success;
+  }
+}
+
+// Появление — единственное движение в теме: у сайта это 220 мс, и у подсказки
+// ровно то же время. Отклик (120 мс) живёт в .joer-move().
+.theme-joer-ui .tooltip .tooltip-inner,
+html[data-joer-atmosphere] .tooltip .tooltip-inner {
+  transition: opacity var(--joer-dur-2) var(--joer-ease);
+
+  background-color: var(--joer-surface-2);
+  border: 1px solid var(--joer-border);
+  border-radius: var(--joer-radius-sm);
+  color: var(--joer-text);
+  box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.75);
+  padding: 6px 10px;
+}
+
+.theme-joer-ui .background-message,
+.theme-joer-ui .background-message .message {
+  color: var(--joer-faint);
+}
+
+// Полосы прокрутки -----------------------------------------------------------
+
+.theme-joer-ui ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.theme-joer-ui ::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.theme-joer-ui ::-webkit-scrollbar-thumb {
+  background-color: var(--joer-scrollbar);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 999px;
+}
+
+.theme-joer-ui ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--joer-accent);
+  background-clip: padding-box;
+}
+
+.theme-joer-ui ::-webkit-scrollbar-corner {
+  background-color: transparent;
+}

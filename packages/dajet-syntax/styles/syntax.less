@@ -1,0 +1,211 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Подсветка: тёплые сдержанные цвета серии.
+//
+// Правило одно: цветом отмечено важное, а всё остальное читается как текст.
+// Поэтому ключевое и теги — терракота (в тёмном облике её светлый вариант),
+// строки и типы — приглушённые, а переменные и знаки препинания вообще не
+// кричат: они и есть обычный текст.
+//
+// Правила пишутся и на современные классы (.syntax--comment), и без префикса
+// (.comment) — старые грамматики Atom всё ещё отдают вторые.
+// ─────────────────────────────────────────────────────────────────────────────
+
+.syntax--comment {
+  color: var(--dajet-syn-comment);
+  font-style: normal; // серия не наклоняет: наклон — это крик
+}
+
+.syntax--string {
+  color: var(--dajet-syn-string);
+
+  &.syntax--regexp {
+    color: var(--dajet-syn-string);
+  }
+
+  .syntax--punctuation.syntax--definition {
+    color: var(--dajet-syn-string);
+  }
+}
+
+.syntax--constant {
+  color: var(--dajet-syn-number);
+
+  &.syntax--character,
+  &.syntax--numeric,
+  &.syntax--boolean,
+  &.syntax--language,
+  &.syntax--other {
+    color: var(--dajet-syn-number);
+  }
+}
+
+.syntax--keyword {
+  color: var(--dajet-syn-keyword);
+
+  &.syntax--control,
+  &.syntax--operator,
+  &.syntax--other.syntax--special-method,
+  &.syntax--other.syntax--unit {
+    color: var(--dajet-syn-keyword);
+  }
+}
+
+.syntax--storage,
+.syntax--modifier,
+.syntax--other.syntax--modifier {
+  color: var(--dajet-syn-keyword);
+}
+
+// Имена: функции, типы, теги --------------------------------------------------
+
+.syntax--entity {
+  &.syntax--name {
+    color: inherit;
+
+    &.syntax--class,
+    &.syntax--type,
+    &.syntax--section {
+      color: var(--dajet-syn-class);
+    }
+
+    &.syntax--function {
+      color: var(--dajet-syn-function);
+    }
+
+    &.syntax--tag {
+      color: var(--dajet-syn-keyword);
+    }
+  }
+
+  &.syntax--other {
+    &.syntax--attribute-name {
+      color: var(--dajet-syn-attribute);
+    }
+
+    &.syntax--inherited-class {
+      color: var(--dajet-syn-class);
+    }
+  }
+}
+
+.syntax--support {
+  color: inherit;
+
+  &.syntax--function {
+    color: var(--dajet-syn-function);
+  }
+
+  &.syntax--class,
+  &.syntax--type {
+    color: var(--dajet-syn-class);
+  }
+
+  &.syntax--constant {
+    color: var(--dajet-syn-number);
+  }
+}
+
+.syntax--variable {
+  color: inherit;
+
+  &.syntax--parameter {
+    color: inherit;
+  }
+
+  &.syntax--other.syntax--property,
+  &.syntax--property {
+    color: var(--dajet-syn-attribute);
+  }
+}
+
+.syntax--property-name {
+  color: var(--dajet-syn-attribute);
+}
+
+// Знаки и служебное -----------------------------------------------------------
+
+.syntax--punctuation {
+  color: var(--dajet-syn-punctuation);
+
+  &.syntax--definition {
+    color: var(--dajet-syn-punctuation);
+
+    &.syntax--tag,
+    &.syntax--string {
+      color: var(--dajet-syn-punctuation);
+    }
+  }
+}
+
+.syntax--meta {
+  color: inherit;
+
+  &.syntax--tag {
+    color: var(--dajet-syn-punctuation);
+  }
+}
+
+.syntax--none {
+  color: inherit;
+}
+
+.syntax--invalid {
+  color: var(--dajet-syn-invalid);
+}
+
+.syntax--invalid.syntax--illegal,
+.syntax--invalid.syntax--deprecated {
+  color: var(--dajet-syn-invalid);
+}
+
+// Разметка (Markdown), diff и прочее, что читают как документ ----------------
+
+.syntax--markup {
+  &.syntax--heading {
+    color: var(--dajet-syn-class);
+
+    .syntax--punctuation.syntax--definition.syntax--heading {
+      color: var(--dajet-syn-number);
+    }
+  }
+
+  &.syntax--bold {
+    color: inherit;
+    font-weight: 700;
+  }
+
+  &.syntax--italic {
+    color: inherit;
+    font-style: italic;
+  }
+
+  &.syntax--underline,
+  &.syntax--link {
+    color: var(--dajet-syn-function);
+  }
+
+  &.syntax--quote {
+    color: var(--dajet-syn-comment);
+  }
+
+  &.syntax--raw,
+  &.syntax--code {
+    color: var(--dajet-syn-string);
+  }
+
+  &.syntax--list {
+    color: var(--dajet-syn-number);
+  }
+
+  &.syntax--inserted {
+    color: var(--dajet-syn-added);
+  }
+
+  &.syntax--deleted {
+    color: var(--dajet-syn-removed);
+  }
+
+  &.syntax--changed {
+    color: var(--dajet-syn-modified);
+  }
+}

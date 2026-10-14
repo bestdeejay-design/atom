@@ -1,0 +1,54 @@
+{
+  "name": "joer-ui",
+  "theme": "ui",
+  "version": "1.0.0",
+  "description": "Тема интерфейса «joer»: тёмная основа и пять атмосфер — lounge, club, romantic, space, velvet",
+  "keywords": [
+    "joer",
+    "dark",
+    "atmosphere",
+    "ui"
+  ],
+  "license": "MIT",
+  "main": "lib/main",
+  "engines": {
+    "atom": ">0.40.0"
+  },
+  "configSchema": {
+    "atmosphere": {
+      "title": "Атмосфера",
+      "description": "Пять миров joer: lounge — неоновый вечер; club — ночной клуб; romantic — тёплый вечер; space — космос; velvet — велюр и золото.",
+      "type": "string",
+      "default": "lounge",
+      "enum": [
+        "lounge",
+        "club",
+        "romantic",
+        "space",
+        "velvet"
+      ],
+      "order": 1
+    },
+    "ambient": {
+      "title": "Атмосферная подсветка окна",
+      "description": "Мягкое свечение цвета атмосферы за панелями. Неподвижное: в редакторе нет места сцене.",
+      "type": "boolean",
+      "default": true,
+      "order": 2
+    },
+    "fontSize": {
+      "title": "Размер шрифта интерфейса",
+      "type": "integer",
+      "default": 13,
+      "enum": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "order": 3
+    }
+  }
+}

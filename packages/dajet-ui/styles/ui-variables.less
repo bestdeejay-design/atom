@@ -1,0 +1,96 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Договор темы с остальными пакетами Atom.
+//
+// Эти имена читают чужие стили (дерево файлов, настройки, строка состояния)
+// и пересчитывают из них цвета: lighten(@text-color, 15%), darken(@button-
+// background-color, 5%) и так далее. Поэтому здесь обязаны стоять настоящие
+// цвета, а не переменные CSS: арифметику над var() LESS не умеет.
+//
+// Значения — тёмный «матовый» облик: он основной. Светлый облик тема красит
+// сама (см. looks.less и chrome.less) и перекрывает чужие правила точечно —
+// там, где поверхность видна.
+// ─────────────────────────────────────────────────────────────────────────────
+
+@import "palette.less";
+
+// Тексты ---------------------------------------------------------------------
+
+@text-color: @dajet-ink-dark;
+@text-color-subtle: @dajet-muted-dark;
+@text-color-highlight: #ffffff;
+@text-color-selected: @text-color-highlight;
+
+@text-color-info: @dajet-info-dark;
+@text-color-success: @dajet-success-dark;
+@text-color-warning: @dajet-warning-dark;
+@text-color-error: @dajet-error-dark;
+
+@background-color-info: @dajet-info-light;
+@background-color-success: @dajet-success-light;
+@background-color-warning: @dajet-warning-light;
+@background-color-error: @dajet-error-light;
+@background-color-highlight: @dajet-hover-dark;
+@background-color-selected: @dajet-wash-dark;
+
+// Поверхности ----------------------------------------------------------------
+
+@app-background-color: @dajet-ground-dark;
+@base-background-color: @dajet-ground-dark;
+@base-border-color: @dajet-hairline-dark;
+
+@pane-item-background-color: #0c0d10;
+@pane-item-border-color: @dajet-hairline-dark;
+
+@input-background-color: #14161a;
+@input-border-color: @dajet-hairline-dark;
+
+@tool-panel-background-color: #101114;
+@tool-panel-border-color: @dajet-hairline-dark;
+
+@inset-panel-background-color: #14161a;
+@inset-panel-border-color: @dajet-hairline-dark;
+
+@panel-heading-background-color: #14161a;
+@panel-heading-border-color: transparent;
+
+@overlay-background-color: #15171b;
+@overlay-border-color: @dajet-hairline-dark;
+
+@button-background-color: #17191d;
+@button-background-color-hover: #1e2126;
+@button-background-color-selected: @dajet-accent-dark;
+@button-border-color: @dajet-hairline-dark;
+
+@tab-bar-background-color: @dajet-ground-dark;
+@tab-bar-border-color: @dajet-hairline-dark;
+@tab-background-color: @dajet-ground-dark;
+@tab-background-color-active: #0c0d10;
+@tab-border-color: @dajet-hairline-dark;
+
+@tree-view-background-color: #131417;
+@tree-view-border-color: @dajet-hairline-dark;
+
+@ui-site-color-1: @dajet-success-light;
+@ui-site-color-2: @dajet-info-light;
+@ui-site-color-3: @dajet-warning-light;
+@ui-site-color-4: #8a6a9a;
+@ui-site-color-5: #a89040;
+
+// Расстояния: числа серии ----------------------------------------------------
+
+@font-size: 13px;
+@input-font-size: 13px;
+
+@disclosure-arrow-size: 12px;
+
+@component-padding: 10px;
+@component-icon-padding: 5px;
+@component-icon-size: 16px;
+@component-line-height: 26px; // Metrics.row — строка серии
+@component-border-radius: 8px; // Metrics.corner
+
+@tab-height: 30px;
+
+@font-family: system-ui, -apple-system, "SF Pro Text", "Helvetica Neue",
+  sans-serif;
+@use-custom-controls: true;

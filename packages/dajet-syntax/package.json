@@ -1,0 +1,17 @@
+{
+  "name": "dajet-syntax",
+  "theme": "syntax",
+  "version": "1.0.0",
+  "description": "Тема подсветки «dajet»: тёплые сдержанные цвета серии, терракота для ключевого",
+  "keywords": [
+    "dajet",
+    "light",
+    "dark",
+    "adaptive",
+    "syntax"
+  ],
+  "license": "MIT",
+  "engines": {
+    "atom": ">0.50.0"
+  }
+}

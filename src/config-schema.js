@@ -100,7 +100,10 @@ const configSchema = {
       },
       themes: {
         type: 'array',
-        default: ['one-dark-ui', 'one-dark-syntax'],
+        // ATOM LITE: свои темы — по умолчанию (dajet: терракота, тёплое
+        // светлое стекло и матовый почти-чёрный). Остальные темы остаются в
+        // сборке и выбираются в настройках.
+        default: ['dajet-ui', 'dajet-syntax'],
         items: {
           type: 'string'
         },

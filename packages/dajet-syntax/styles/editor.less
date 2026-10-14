@@ -1,0 +1,88 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Само полотно: фон, курсор, выделение, номера строк, направляющие.
+//
+// Поверхность и текст берутся у UI-темы «dajet», если она активна; иначе —
+// значения серии из syntax-variables.less (тёмные).
+// ─────────────────────────────────────────────────────────────────────────────
+
+atom-text-editor {
+  background-color: var(--dajet-base, @syntax-background-color);
+  color: var(--dajet-ink, @syntax-text-color);
+
+  .line.cursor-line {
+    background-color: var(--dajet-syn-cursor-line);
+  }
+
+  // Курсор — терракота: единственное, что в серии помечено цветом.
+  .cursor {
+    border-color: var(--dajet-accent, @syntax-cursor-color);
+  }
+
+  .selection .region {
+    background-color: var(--dajet-syn-selection);
+    border-radius: 2px;
+  }
+
+  .bracket-matcher .region {
+    border: 1px solid var(--dajet-accent, @syntax-cursor-color);
+    background-color: transparent;
+    border-radius: 3px;
+  }
+
+  .invisible-character,
+  .indent-guide {
+    color: var(--dajet-syn-invisible);
+  }
+
+  .indent-guide {
+    box-shadow: inset 1px 0 0 var(--dajet-syn-guide);
+  }
+
+  .wrap-guide {
+    background-color: var(--dajet-syn-guide);
+  }
+
+  // Поиск: мягкая подложка, у текущего совпадения — рамка терракоты.
+  .find-result .region.region.region,
+  .current-result .region.region.region {
+    border-radius: 3px;
+  }
+
+  .find-result .region.region.region {
+    background-color: var(--dajet-syn-selection);
+    border: 1px solid transparent;
+  }
+
+  .current-result .region.region.region {
+    background-color: transparent;
+    border: 1px solid var(--dajet-accent, @syntax-cursor-color);
+  }
+
+  .gutter {
+    background-color: var(--dajet-base, @syntax-background-color);
+    color: var(--dajet-syn-gutter);
+    border-right: 0;
+
+    .line-number {
+      color: var(--dajet-syn-gutter);
+      font-size: 12px;
+      padding-left: 6px;
+      padding-right: 10px;
+
+      &.cursor-line {
+        color: var(--dajet-ink, @syntax-text-color);
+      }
+
+      &.cursor-line-no-selection {
+        color: var(--dajet-ink, @syntax-text-color);
+        font-weight: 600;
+      }
+    }
+  }
+
+  .fold-marker:after,
+  .gutter .line-number.folded,
+  .gutter .line-number:after {
+    color: var(--dajet-syn-gutter);
+  }
+}
