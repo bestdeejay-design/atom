@@ -40,6 +40,10 @@ Transpiling CSON paths in /Users/runner/work/atom/atom/out/app
 Transpiling PEG.js paths in /Users/runner/work/atom/atom/out/app
 Generating module cache for /Users/runner/work/atom/atom/out/app
 Generating metadata for /Users/runner/work/atom/atom/out/app/package.json
+Invalid package metadata. dajet-syntax: No repository field.
+Invalid package metadata. dajet-ui: No repository field.
+Invalid package metadata. joer-syntax: No repository field.
+Invalid package metadata. joer-ui: No repository field.
 Generating API docs at /Users/runner/work/atom/atom/docs/output/atom-api.json
 Running electron-packager on /Users/runner/work/atom/atom/out/app with app name "Atom Dev"
 Packaging app for platform darwin arm64 using electron v11.5.0

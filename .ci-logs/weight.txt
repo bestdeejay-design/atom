@@ -1,16 +1,16 @@
-ВСЁ ПРИЛОЖЕНИЕ (распакованное) 429.1 МБ
-Electron Framework (Chromium + V8)                   194.3 МБ
-Contents/Frameworks, всего                      196.7 МБ
-Contents/Resources, всего                       232.2 МБ
-  из них app.asar — код редактора и node_modules 208.2 МБ
+ВСЁ ПРИЛОЖЕНИЕ (распакованное) 429.3 МБ
+Electron Framework (Chromium + V8)                   194.2 МБ
+Contents/Frameworks, всего                      196.6 МБ
+Contents/Resources, всего                       232.5 МБ
+  из них app.asar — код редактора и node_modules 208.5 МБ
   из них app.asar.unpacked — нативные модули 20.9 МБ
   из них app — то, что вне asar (apm больше не копируется) 0.0 МБ
-архив out/atom-mac.zip (то, что качается) 144.8 МБ
+архив out/atom-mac.zip (то, что качается) 144.3 МБ
 --- верхний уровень Contents/Resources ---
-213212	out/Atom Dev.app/Contents/Resources/app.asar
+213548	out/Atom Dev.app/Contents/Resources/app.asar
 21452	out/Atom Dev.app/Contents/Resources/app.asar.unpacked
 1224	out/Atom Dev.app/Contents/Resources/atom.icns
-936	out/Atom Dev.app/Contents/Resources/LICENSE.md
+944	out/Atom Dev.app/Contents/Resources/LICENSE.md
 628	out/Atom Dev.app/Contents/Resources/file.icns
 268	out/Atom Dev.app/Contents/Resources/electron.icns
 8	out/Atom Dev.app/Contents/Resources/app
@@ -23,7 +23,7 @@ Contents/Resources, всего                       232.2 МБ
 0	out/Atom Dev.app/Contents/Resources/te.lproj
 0	out/Atom Dev.app/Contents/Resources/ta.lproj
 --- что попадёт в app.asar: out/app, верхний уровень ---
-262168	out/app/node_modules
+262324	out/app/node_modules
 2020	out/app/src
 864	out/app/package.json
 356	out/app/static
@@ -75,6 +75,6 @@ Contents/Resources, всего                       232.2 МБ
 1164	out/app/node_modules/@sinonjs
 984	out/app/node_modules/async
 --- out/app, сумма по расширениям (что занимает место) ---
-    1617
+    1625
 файлов .map и .md: (число выше)
 848K	total

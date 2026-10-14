@@ -224,8 +224,8 @@ Installing apm
 ../deps/libgit2/deps/zlib/inffast.c:50:20: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
    50 | void ZLIB_INTERNAL inflate_fast(strm, start)
       |                    ^
-28 warnings generated.
 1 warning generated.
+28 warnings generated.
 4 warnings generated.
 ../deps/libgit2/deps/zlib/inflate.c:105:11: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   105 | local int inflateStateCheck(strm)
