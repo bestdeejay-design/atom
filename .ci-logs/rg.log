@@ -1,0 +1,4 @@
+ripgrep: нужна сборка «aarch64-apple-darwin» (целевая архитектура: arm64)
+ripgrep: скачиваю https://github.com/microsoft/ripgrep-prebuilt/releases/download/v12.1.1-4/ripgrep-v12.1.1-4-aarch64-apple-darwin.tar.gz
+ripgrep: rg уже лежит в корне архива
+ripgrep: готово, архив лежит в кэше пакета (/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/vscode-ripgrep-cache-1.9.0/ripgrep-v12.1.1-x86_64-apple-darwin.tar.gz)
