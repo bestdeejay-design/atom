@@ -1,38 +1,38 @@
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/@atom/fuzzy-native/build/Release/fuzzy-native.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/@atom/nsfw/build/Release/nsfw.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/@atom/watcher/build/Release/watcher.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/ctags/build/Release/ctags.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/fs-admin/build/Release/fs_admin.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/@atom/fuzzy-native/build/Release/fuzzy-native.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/@atom/nsfw/build/Release/nsfw.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/@atom/watcher/build/Release/watcher.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/ctags/build/Release/ctags.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/fs-admin/build/Release/fs_admin.node
 ? Contents/Resources/app.asar.unpacked/node_modules/fswin/arm64/fswin.node
 ? Contents/Resources/app.asar.unpacked/node_modules/fswin/ia32/fswin.node
 ? Contents/Resources/app.asar.unpacked/node_modules/fswin/x64/fswin.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/git-utils/build/Release/git.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/keyboard-layout/build/Release/keyboard-layout-manager.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/nslog/build/Release/nslog.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/oniguruma/build/Release/onig_scanner.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/pathwatcher/build/Release/pathwatcher.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/scrollbar-style/build/Release/scrollbar-style-observer-native.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/spellchecker/build/Release/spellchecker.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/superstring/build/Release/superstring.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/text-buffer/node_modules/fs-admin/build/Release/fs_admin.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-bash/build/Release/tree_sitter_bash_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-c/build/Release/tree_sitter_c_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-cpp/build/Release/tree_sitter_cpp_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-css/build/Release/tree_sitter_css_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-embedded-template/build/Release/tree_sitter_embedded_template_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-go/build/Release/tree_sitter_go_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-html/build/Release/tree_sitter_html_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-java-dev/build/Release/tree_sitter_java_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-javascript/build/Release/tree_sitter_javascript_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-jsdoc/build/Release/tree_sitter_jsdoc_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-json/build/Release/tree_sitter_json_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-python/build/Release/tree_sitter_python_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-regex/build/Release/tree_sitter_regex_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-ruby/build/Release/tree_sitter_ruby_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-rust/build/Release/tree_sitter_rust_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-typescript/build/Release/tree_sitter_tsx_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-typescript/build/Release/tree_sitter_typescript_binding.node
-x86_64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter/build/Release/tree_sitter_runtime_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/git-utils/build/Release/git.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/keyboard-layout/build/Release/keyboard-layout-manager.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/nslog/build/Release/nslog.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/oniguruma/build/Release/onig_scanner.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/pathwatcher/build/Release/pathwatcher.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/scrollbar-style/build/Release/scrollbar-style-observer-native.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/spellchecker/build/Release/spellchecker.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/superstring/build/Release/superstring.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/text-buffer/node_modules/fs-admin/build/Release/fs_admin.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-bash/build/Release/tree_sitter_bash_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-c/build/Release/tree_sitter_c_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-cpp/build/Release/tree_sitter_cpp_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-css/build/Release/tree_sitter_css_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-embedded-template/build/Release/tree_sitter_embedded_template_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-go/build/Release/tree_sitter_go_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-html/build/Release/tree_sitter_html_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-java-dev/build/Release/tree_sitter_java_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-javascript/build/Release/tree_sitter_javascript_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-jsdoc/build/Release/tree_sitter_jsdoc_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-json/build/Release/tree_sitter_json_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-python/build/Release/tree_sitter_python_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-regex/build/Release/tree_sitter_regex_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-ruby/build/Release/tree_sitter_ruby_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-rust/build/Release/tree_sitter_rust_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-typescript/build/Release/tree_sitter_tsx_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter-typescript/build/Release/tree_sitter_typescript_binding.node
+x86_64 arm64 Contents/Resources/app.asar.unpacked/node_modules/tree-sitter/build/Release/tree_sitter_runtime_binding.node
 x86_64 Contents/Resources/app/apm/node_modules/git-utils/build/Release/git.node
 x86_64 Contents/Resources/app/apm/node_modules/keytar/build/Release/keytar.node
 x86_64 Contents/Resources/app/apm/node_modules/oniguruma/build/Release/onig_scanner.node
