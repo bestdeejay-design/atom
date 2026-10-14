@@ -1,13 +1,13 @@
-ВСЁ ПРИЛОЖЕНИЕ (распакованное) 429.3 МБ
-Electron Framework (Chromium + V8)                   194.2 МБ
-Contents/Frameworks, всего                      196.6 МБ
-Contents/Resources, всего                       232.5 МБ
-  из них app.asar — код редактора и node_modules 208.5 МБ
+ВСЁ ПРИЛОЖЕНИЕ (распакованное) 429.0 МБ
+Electron Framework (Chromium + V8)                   194.0 МБ
+Contents/Frameworks, всего                      196.4 МБ
+Contents/Resources, всего                       232.4 МБ
+  из них app.asar — код редактора и node_modules 208.4 МБ
   из них app.asar.unpacked — нативные модули 20.9 МБ
   из них app — то, что вне asar (apm больше не копируется) 0.0 МБ
-архив out/atom-mac.zip (то, что качается) 144.3 МБ
+архив out/atom-mac.zip (то, что качается) 144.2 МБ
 --- верхний уровень Contents/Resources ---
-213548	out/Atom Dev.app/Contents/Resources/app.asar
+213444	out/Atom Dev.app/Contents/Resources/app.asar
 21452	out/Atom Dev.app/Contents/Resources/app.asar.unpacked
 1224	out/Atom Dev.app/Contents/Resources/atom.icns
 944	out/Atom Dev.app/Contents/Resources/LICENSE.md

@@ -1,8 +1,8 @@
-total 306920
-drwxr-xr-x   7 runner  staff        224 Oct 14 21:16 .
-drwxr-xr-x  47 runner  staff       1504 Oct 14 21:16 ..
-drwxr-xr-x  12 runner  staff        384 Oct 14 21:12 app
-drwxr-xr-x   5 runner  staff        160 Oct 14 21:14 Atom Dev-darwin-arm64
-drwxr-xr-x   3 runner  staff         96 Oct 14 21:13 Atom Dev.app
--rw-r--r--   1 runner  staff  144020775 Oct 14 21:16 atom-mac.zip
--rw-r--r--   1 runner  staff    5850200 Oct 14 21:16 startup.js
+total 306664
+drwxr-xr-x   7 runner  staff        224 Oct 14 22:03 .
+drwxr-xr-x  47 runner  staff       1504 Oct 14 22:03 ..
+drwxr-xr-x  12 runner  staff        384 Oct 14 21:58 app
+drwxr-xr-x   5 runner  staff        160 Oct 14 22:00 Atom Dev-darwin-arm64
+drwxr-xr-x   3 runner  staff         96 Oct 14 21:59 Atom Dev.app
+-rw-r--r--   1 runner  staff  144020684 Oct 14 22:03 atom-mac.zip
+-rw-r--r--   1 runner  staff    5850200 Oct 14 22:02 startup.js
