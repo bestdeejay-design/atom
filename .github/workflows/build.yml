@@ -463,6 +463,27 @@ jobs:
             if [ -f "$f" ]; then cp "$f" ".ci-logs/$f"; fi
           done
           ls -la out/ > .ci-logs/out-listing.txt 2>&1 || true
+          # Темы: они небольшие, в топ весов не попадают, поэтому проверяем
+          # отдельно — что пакеты доехали до сборки целиком, вместе со стилями.
+          {
+            echo "=== наши темы в сборке ==="
+            for t in dajet-ui dajet-syntax joer-ui joer-syntax; do
+              d="out/app/node_modules/$t"
+              if [ -d "$d" ]; then
+                echo "--- $t: $(du -sk "$d" | cut -f1) КБ"
+                ls "$d" | tr '\n' ' '; echo
+                for f in index.less styles/syntax-variables.less styles/ui-variables.less lib/main.js; do
+                  [ -f "$d/$f" ] && echo "    есть $f" || true
+                done
+              else
+                echo "--- $t: НЕТ ($d не найден)"
+              fi
+            done
+            echo "=== темы в package.json приложения ==="
+            grep -o '"\(dajet\|joer\)-[a-z]*": "file:./packages/[a-z-]*"' out/app/package.json || echo "в package.json приложения тем нет"
+            echo "=== core.themes по умолчанию в собранном коде ==="
+            grep -a -o "default: \['dajet-ui', 'dajet-syntax'\]" out/app/src/config-schema.js || echo "не найдено (код в снапшоте или изменён формат)"
+          } > .ci-logs/themes.txt 2>&1 || true
           git add -f .ci-logs
           git commit -qm "ci: логи прогона ${{ github.run_id }} [skip ci]" || echo "нечего коммитить"
           # Сборка идёт 40 минут — за это время в ветку успевает прилететь
