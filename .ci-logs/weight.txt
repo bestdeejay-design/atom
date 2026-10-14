@@ -1,0 +1,81 @@
+ВСЁ ПРИЛОЖЕНИЕ (распакованное) 493.7 МБ
+Electron Framework (Chromium + V8)                   194.1 МБ
+Contents/Frameworks, всего                      196.5 МБ
+Contents/Resources, всего                       296.9 МБ
+  из них app.asar — код редактора и node_modules 272.5 МБ
+  из них app.asar.unpacked — нативные модули 21.4 МБ
+  из них app — то, что вне asar (apm больше не копируется) 0.0 МБ
+архив out/atom-mac.zip (то, что качается) 160.2 МБ
+--- верхний уровень Contents/Resources ---
+279072	out/Atom Dev.app/Contents/Resources/app.asar
+21940	out/Atom Dev.app/Contents/Resources/app.asar.unpacked
+1224	out/Atom Dev.app/Contents/Resources/atom.icns
+936	out/Atom Dev.app/Contents/Resources/LICENSE.md
+628	out/Atom Dev.app/Contents/Resources/file.icns
+268	out/Atom Dev.app/Contents/Resources/electron.icns
+8	out/Atom Dev.app/Contents/Resources/app
+0	out/Atom Dev.app/Contents/Resources/zh_TW.lproj
+0	out/Atom Dev.app/Contents/Resources/zh_CN.lproj
+0	out/Atom Dev.app/Contents/Resources/vi.lproj
+0	out/Atom Dev.app/Contents/Resources/uk.lproj
+0	out/Atom Dev.app/Contents/Resources/tr.lproj
+0	out/Atom Dev.app/Contents/Resources/th.lproj
+0	out/Atom Dev.app/Contents/Resources/te.lproj
+0	out/Atom Dev.app/Contents/Resources/ta.lproj
+--- что попадёт в app.asar: out/app, верхний уровень ---
+321192	out/app/node_modules
+30216	out/app/less-compile-cache
+2020	out/app/src
+1224	out/app/package.json
+356	out/app/static
+328	out/app/resources
+136	out/app/spec
+80	out/app/vendor
+24	out/app/exports
+24	out/app/dot-atom
+4	out/app/benchmarks
+--- out/app/node_modules, топ-40 ---
+30708	out/app/node_modules/typescript
+29340	out/app/node_modules/accessibility-developer-tools
+19388	out/app/node_modules/spelling-manager
+18588	out/app/node_modules/superstring
+13992	out/app/node_modules/git-utils
+12500	out/app/node_modules/tree-sitter-typescript
+11140	out/app/node_modules/tree-sitter-cpp
+10960	out/app/node_modules/emoji-images
+10348	out/app/node_modules/tree-sitter-ruby
+5968	out/app/node_modules/es-abstract
+5476	out/app/node_modules/yargs-unparser
+5260	out/app/node_modules/sinon
+5096	out/app/node_modules/mocha-multi-reporters
+5000	out/app/node_modules/natural
+4988	out/app/node_modules/babel-core
+4704	out/app/node_modules/moment
+4436	out/app/node_modules/tree-sitter-rust
+4040	out/app/node_modules/core-js
+4024	out/app/node_modules/vscode-ripgrep
+3820	out/app/node_modules/settings-view
+3344	out/app/node_modules/tree-sitter-bash
+2884	out/app/node_modules/oniguruma
+2752	out/app/node_modules/tree-sitter
+2680	out/app/node_modules/tree-sitter-c
+2628	out/app/node_modules/mocha
+2556	out/app/node_modules/spellchecker
+2436	out/app/node_modules/tree-sitter-javascript
+2412	out/app/node_modules/underscore
+2408	out/app/node_modules/highlight.js
+2376	out/app/node_modules/tree-sitter-go
+2116	out/app/node_modules/lodash
+2100	out/app/node_modules/es5-ext
+2092	out/app/node_modules/ajv
+1968	out/app/node_modules/tree-sitter-java-dev
+1932	out/app/node_modules/@atom
+1832	out/app/node_modules/devtron
+1772	out/app/node_modules/tree-sitter-python
+1556	out/app/node_modules/acorn
+1444	out/app/node_modules/chart.js
+1384	out/app/node_modules/less
+--- out/app, сумма по расширениям (что занимает место) ---
+    1721
+файлов .map и .md: (число выше)
+848K	total

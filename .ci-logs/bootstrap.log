@@ -84,26 +84,26 @@ Installing apm
 ../deps/libgit2/deps/zlib/adler32.c:63:15: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
    63 | uLong ZEXPORT adler32_z(adler, buf, len)
       |               ^
-../deps/libgit2/deps/zlib/adler32.c:134:15: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
-  134 | uLong ZEXPORT adler32(adler, buf, len)
-      |               ^
-../deps/libgit2/deps/zlib/adler32.c:143:13: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
-  143 | local uLong adler32_combine_(adler1, adler2, len2)
-      |             ^
-../deps/libgit2/deps/zlib/adler32.c:172:15: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
-  172 | uLong ZEXPORT adler32_combine(adler1, adler2, len2)
-      |               ^
-../deps/libgit2/deps/zlib/adler32.c:180:15: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
-  180 | uLong ZEXPORT adler32_combine64(adler1, adler2, len2)
-      |               ^
 ../deps/libgit2/deps/zlib/crc32.c:202:23: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   202 | unsigned long ZEXPORT crc32_z(crc, buf, len)
       |                       ^
+../deps/libgit2/deps/zlib/adler32.c:134:15: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
+  134 | uLong ZEXPORT adler32(adler, buf, len)
+      |               ^
 ../deps/libgit2/deps/zlib/crc32.c:237:23: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
-  237 | unsigned long ZEXPORT crc32(crc, buf, len)
+  237 | unsign../deps/libgit2/deps/zlib/adler32.c:143:13: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
+  143 | local uLonge adler32_combine_(adler1, adler2, len2)
+      |             ^
+d long ZEXPORT crc32(crc, b../deps/libgit2/deps/zlib/adler32.c:172:15: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
+  172 | uLong ZEXPORT adler32uf, len)
       |                       ^
+_combine(adler1, adler2, len2)
+      |               ^
 ../deps/libgit2/deps/zlib/crc32.c:266:21: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
-  266 | local unsigned long crc32_little(crc, buf, len)
+  266 | local../deps/libgit2/deps/zlib/adler32.c :180:15u: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]n
+  s180 | uLongi ZEXgPORT adlenr32_comebine64d(adle r1, adller2,o len2)
+n      |               ^
+g crc32_little(crc, buf, len)
       |                     ^
 ../deps/libgit2/deps/zlib/crc32.c:306:21: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   306 | local unsigned long crc32_big(crc, buf, len)
@@ -225,8 +225,8 @@ Installing apm
    50 | void ZLIB_INTERNAL inflate_fast(strm, start)
       |                    ^
 1 warning generated.
-4 warnings generated.
 28 warnings generated.
+4 warnings generated.
 ../deps/libgit2/deps/zlib/inflate.c:105:11: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   105 | local int inflateStateCheck(strm)
       |           ^
@@ -278,9 +278,12 @@ Installing apm
 ../deps/libgit2/deps/zlib/inflate.c:1451:13: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
  1451 | int ZEXPORT inflateSyncPoint(strm)
       |             ^
-../deps/libgit2/deps/zlib/inflate.c:1461:13: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
+../deps/libgit2/deps/zlib/inftrees.c:32:19: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
+   32 | int ZL../deps/libgit2/deps/zlib/inflate.c:1461:13: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
  1461 | int ZEXPORT inflateCopy(dest, source)
       |             ^
+IB_INTERNAL inflate_table(type, lens, codes, table, bits, work)
+      |                   ^
 ../deps/libgit2/deps/zlib/inflate.c:1508:13: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
  1508 | int ZEXPORT inflateUndermine(strm, subvert)
       |             ^
@@ -293,9 +296,6 @@ Installing apm
 ../deps/libgit2/deps/zlib/inflate.c:1554:23: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
  1554 | unsigned long ZEXPORT inflateCodesUsed(strm)
       |                       ^
-../deps/libgit2/deps/zlib/inftrees.c:32:19: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
-   32 | int ZLIB_INTERNAL inflate_table(type, lens, codes, table, bits, work)
-      |                   ^
 ../deps/libgit2/deps/zlib/trees.c:379:20: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   379 | void ZLIB_INTERNAL _tr_init(s)
       |                    ^
@@ -1169,8 +1169,8 @@ cated-non-prototype]
  1190 | local void bi_windup(s)
       |            ^
 1 warning generated.
-20 warnings generated.
 22 warnings generated.
+20 warnings generated.
 ../deps/libgit2/deps/zlib/zutil.c:133:22: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   133 | const char * ZEXPORT zError(err)
       |                      ^
