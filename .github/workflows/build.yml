@@ -60,6 +60,14 @@ jobs:
       ATOM_ELECTRON_URL: https://artifacts.electronjs.org/headers/dist
       # Разрешить node-gyp брать заголовки из готового кэша ~/.node-gyp.
       npm_config_ensure: 'true'
+      # Новые macOS SDK сделали iconv_t указателем на неполный тип
+      # (struct __tag_iconv_t *), и старый код вроде superstring 2.4.4
+      # больше не собирается: void* не приводится к iconv_t неявно.
+      # Заголовок возвращает прежние приведения; node-gyp подмешивает
+      # CFLAGS/CXXFLAGS в каждую команду компиляции
+      # (CXXFLAGS.target ?= $(CPPFLAGS) $(CXXFLAGS) в make-генераторе gyp).
+      CFLAGS: -include ${{ github.workspace }}/script/macos-iconv-compat.h
+      CXXFLAGS: -include ${{ github.workspace }}/script/macos-iconv-compat.h
 
     steps:
       - name: Клонирование
@@ -241,6 +249,9 @@ jobs:
       ATOM_ELECTRON_URL: https://artifacts.electronjs.org/headers/dist
       # Разрешить node-gyp брать заголовки из готового кэша ~/.node-gyp.
       npm_config_ensure: 'true'
+      # См. пояснение в задаче build-x64 и script/macos-iconv-compat.h.
+      CFLAGS: -include ${{ github.workspace }}/script/macos-iconv-compat.h
+      CXXFLAGS: -include ${{ github.workspace }}/script/macos-iconv-compat.h
 
     steps:
       - name: Клонирование
