@@ -29,18 +29,17 @@ module.exports = class CommandInstaller {
       );
     };
 
+    // ATOM LITE: команда `apm` больше не устанавливается — менеджер пакетов
+    // в приложении не поставляется (см. script/lib/package-application.js).
     this.installAtomCommand(true, (error, atomCommandName) => {
       if (error) return showErrorDialog(error);
-      this.installApmCommand(true, (error, apmCommandName) => {
-        if (error) return showErrorDialog(error);
-        this.applicationDelegate.confirm(
-          {
-            message: 'Commands installed.',
-            detail: `The shell commands \`${atomCommandName}\` and \`${apmCommandName}\` are installed.`
-          },
-          () => {}
-        );
-      });
+      this.applicationDelegate.confirm(
+        {
+          message: 'Commands installed.',
+          detail: `The shell command \`${atomCommandName}\` is installed.`
+        },
+        () => {}
+      );
     });
   }
 
@@ -62,22 +61,6 @@ module.exports = class CommandInstaller {
     this.installCommand(
       path.join(this.getResourcesDirectory(), 'app', 'atom.sh'),
       this.getCommandNameForChannel('atom'),
-      askForPrivilege,
-      callback
-    );
-  }
-
-  installApmCommand(askForPrivilege, callback) {
-    this.installCommand(
-      path.join(
-        this.getResourcesDirectory(),
-        'app',
-        'apm',
-        'node_modules',
-        '.bin',
-        'apm'
-      ),
-      this.getCommandNameForChannel('apm'),
       askForPrivilege,
       callback
     );

@@ -366,13 +366,11 @@ jobs:
           report "Contents/Frameworks, всего" "$(size "$APP/Contents/Frameworks")"
           report "Resources/app.asar — код редактора и node_modules" "$(size "$APP/Contents/Resources/app.asar")"
           report "Resources/app.asar.unpacked — нативные модули" "$(size "$APP/Contents/Resources/app.asar.unpacked")"
-          report "Resources/app — встроенный apm (менеджер пакетов)" "$(size "$APP/Contents/Resources/app")"
+          report "Resources/app — то, что вне app.asar (apm больше не копируется)" "$(size "$APP/Contents/Resources/app")"
           report "Ресурсы Electron без app.asar (иконки, .lproj)" "$(size "$APP/Contents/Resources")"
           report "архив out/atom-mac.zip (то, что качается)" "$(size out/atom-mac.zip)"
           echo "--- что внутри Resources/app (вне asar) ---" >> weight.txt
           du -sk "$APP"/Contents/Resources/app/* 2>/dev/null | sort -rn >> weight.txt || true
-          echo "--- что внутри apm ---" >> weight.txt
-          du -sk "$APP"/Contents/Resources/app/apm/* 2>/dev/null | sort -rn | head -20 >> weight.txt || true
           echo "--- переводы интерфейса (*.lproj) ---" >> weight.txt
           du -csk "$APP"/Contents/Resources/*.lproj 2>/dev/null | tail -1 >> weight.txt || true
           du -sk "$APP"/Contents/Resources/*.lproj 2>/dev/null | sort -rn | head -10 >> weight.txt || true
@@ -391,10 +389,10 @@ jobs:
               echo "::notice title=модуль::не Mach-O, пропущено: $REL"
               continue
             fi
-            # Встроенный apm (менеджер пакетов) живёт по своим правилам: он
-            # запускается собственным Node 12 под x64, поэтому его модули и
-            # собраны под x64. Это отдельное решение по продукту, а не ошибка
-            # сборки: сам редактор к ним не обращается.
+            # Страховка на случай, если apm когда-нибудь вернётся в сборку:
+            # он запускается собственным Node 12 под x64, поэтому его модули
+            # собираются под x64 — это не ошибка сборки и не повод её ронять.
+            # Сейчас apm в приложение не копируется (script/lib/package-application.js).
             case "$REL" in
               */app/apm/*)
                 echo "::notice title=apm::встроенный apm, x64 — вне правил проверки: $REL ($A)"
