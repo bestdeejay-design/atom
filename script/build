@@ -87,7 +87,14 @@ if (!argv.existingBinaries) {
   transpileCsonPaths()
   transpilePegJsPaths()
   generateModuleCache()
-  prebuildLessCache()
+  // ATOM LITE: предсобранный кэш LESS (29.5 МБ в приложении) не создаём.
+  //
+  // Он нужен был только чтобы ускорить первый запуск: темы — это LESS, и
+  // компиляция всех тем при первом старте занимает секунды. Рабочий кэш всё
+  // равно живёт в ~/.atom/compile-cache/less (src/less-compile-cache.coffee),
+  // а папка в приложении была лишь резервным источником. Без неё стили
+  // собираются на месте и кладутся в тот же пользовательский кэш.
+  // prebuildLessCache()
   generateMetadata()
   generateAPIDocs()
   // ATOM LITE: дамп символов пропускаем.
