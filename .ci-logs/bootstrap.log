@@ -96,6 +96,7 @@ Installing apm
 ../deps/libgit2/deps/zlib/adler32.c:180:15: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   180 | uLong ZEXPORT adler32_combine64(adler1, adler2, len2)
       |               ^
+5 warnings generated.
 ../deps/libgit2/deps/zlib/crc32.c:202:23: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   202 | unsigned long ZEXPORT crc32_z(crc, buf, len)
       |                       ^
@@ -123,7 +124,6 @@ Installing apm
 ../deps/libgit2/deps/zlib/crc32.c:436:15: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   436 | uLong ZEXPORT crc32_combine64(crc1, crc2, len2)
       |               ^
-5 warnings generated.
 9 warnings generated.
 ../deps/libgit2/deps/zlib/deflate.c:201:12: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   201 | local void slide_hash(s)
@@ -224,8 +224,8 @@ Installing apm
 ../deps/libgit2/deps/zlib/inffast.c:50:20: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
    50 | void ZLIB_INTERNAL inflate_fast(strm, start)
       |                    ^
-1 warning generated.
 28 warnings generated.
+1 warning generated.
 4 warnings generated.
 ../deps/libgit2/deps/zlib/inflate.c:105:11: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   105 | local int inflateStateCheck(strm)
@@ -257,6 +257,9 @@ Installing apm
 ../deps/libgit2/deps/zlib/inflate.c:622:13: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   622 | int ZEXPORT inflate(strm, flush)
       |             ^
+../deps/libgit2/deps/zlib/inftrees.c:32:19: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
+   32 | int ZLIB_INTERNAL inflate_table(type, lens, codes, table, bits, work)
+      |                   ^
 ../deps/libgit2/deps/zlib/inflate.c:1277:13: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
  1277 | int ZEXPORT inflateEnd(strm)
       |             ^
@@ -293,9 +296,6 @@ Installing apm
 ../deps/libgit2/deps/zlib/inflate.c:1554:23: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
  1554 | unsigned long ZEXPORT inflateCodesUsed(strm)
       |                       ^
-../deps/libgit2/deps/zlib/inftrees.c:32:19: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
-   32 | int ZLIB_INTERNAL inflate_table(type, lens, codes, table, bits, work)
-      |                   ^
 ../deps/libgit2/deps/zlib/trees.c:379:20: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   379 | void ZLIB_INTERNAL _tr_init(s)
       |                    ^
@@ -916,7 +916,17 @@ ld: warning: object file (Release/oniguruma.a[46](utf8.o)) was built for newer '
 ../deps/libgit2/deps/zlib/crc32.c:361:12: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   361 | local void gf2_matrix_square(square, mat)
       |            ^
-../deps/libgit2/deps/zlib/crc32.c:372:13: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
+../deps/libgit2/deps/zlib/crc32.c:372:13: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdepreapm исправлен: целевая архитектура нативных модулей берётся из ATOM_ARCH
+apm  2.6.2
+npm  6.14.13
+node 12.14.1 x64
+atom 1.65.0-dev
+python 3.9.13
+git 2.55.0
+ripgrep: архив уже в кэше (/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/vscode-ripgrep-cache-1.9.0/ripgrep-v12.1.1-x86_64-apple-darwin.tar.gz) — сеть не нужна
+Installing locked modules ✓
+Wrote Dependencies Fingerprint: /Users/runner/work/atom/atom/node_modules/.dependencies-fingerprint f1d677e4065df44f459c1a5f0308271a81324819
+cated-non-prototype]
   372 | local uLong crc32_combine_(crc1, crc2, len2)
       |             ^
 ../deps/libgit2/deps/zlib/crc32.c:428:15: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
@@ -1110,17 +1120,7 @@ ld: warning: object file (Release/oniguruma.a[46](utf8.o)) was built for newer '
 ../deps/libgit2/deps/zlib/trees.c:486:12: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   486 | local void gen_bitlen(s, desc)
       |            ^
-../deps/libgit2/depsapm исправлен: целевая архитектура нативных модулей берётся из ATOM_ARCH
-apm  2.6.2
-npm  6.14.13
-node 12.14.1 x64
-atom 1.65.0-dev
-python 3.9.13
-git 2.55.0
-ripgrep: архив уже в кэше (/var/folders/nj/vtw8zd2j31d1gdrtntc5y4600000gn/T/vscode-ripgrep-cache-1.9.0/ripgrep-v12.1.1-x86_64-apple-darwin.tar.gz) — сеть не нужна
-Installing locked modules ✓
-Wrote Dependencies Fingerprint: /Users/runner/work/atom/atom/node_modules/.dependencies-fingerprint f1d677e4065df44f459c1a5f0308271a81324819
-/zlib/trees.c:572:12: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
+../deps/libgit2/deps/zlib/trees.c:572:12: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   572 | local void gen_codes (tree, max_code, bl_count)
       |            ^
 ../deps/libgit2/deps/zlib/trees.c:615:12: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
@@ -1169,8 +1169,8 @@ Wrote Dependencies Fingerprint: /Users/runner/work/atom/atom/node_modules/.depen
  1190 | local void bi_windup(s)
       |            ^
 1 warning generated.
-20 warnings generated.
 22 warnings generated.
+20 warnings generated.
 ../deps/libgit2/deps/zlib/zutil.c:133:22: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   133 | const char * ZEXPORT zError(err)
       |                      ^

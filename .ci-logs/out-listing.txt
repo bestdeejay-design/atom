@@ -1,10 +1,4 @@
-total 375184
-drwxr-xr-x   9 runner  staff        288 Oct 14 12:14 .
-drwxr-xr-x  46 runner  staff       1472 Oct 14 12:14 ..
-drwxr-xr-x  13 runner  staff        416 Oct 14 12:09 app
-drwxr-xr-x   5 runner  staff        160 Oct 14 12:12 Atom Dev-darwin-arm64
-drwxr-xr-x   3 runner  staff         96 Oct 14 12:10 Atom Dev.app
--rw-r--r--   1 runner  staff     127153 Oct 14 12:14 atom-mac-symbols.zip
--rw-r--r--   1 runner  staff  178538872 Oct 14 12:14 atom-mac.zip
--rw-r--r--   1 runner  staff    6839294 Oct 14 12:13 startup.js
-drwxr-xr-x  33 runner  staff       1056 Oct 14 12:10 symbols
+total 0
+drwxr-xr-x   3 runner  staff    96 Oct 14 13:10 .
+drwxr-xr-x  45 runner  staff  1440 Oct 14 13:10 ..
+drwxr-xr-x  13 runner  staff   416 Oct 14 13:10 app
