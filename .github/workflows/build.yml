@@ -459,6 +459,9 @@ jobs:
           ls -la out/ > .ci-logs/out-listing.txt 2>&1 || true
           git add -f .ci-logs
           git commit -qm "ci: логи прогона ${{ github.run_id }} [skip ci]" || echo "нечего коммитить"
+          # Сборка идёт 40 минут — за это время в ветку успевает прилететь
+          # обычный коммит, и прямой push отбивается как non-fast-forward.
+          git pull -q --rebase origin ${{ github.ref_name }} || true
           git push -q origin HEAD:${{ github.ref_name }}
 
       - name: Отчёт о сборке — в артефакт
