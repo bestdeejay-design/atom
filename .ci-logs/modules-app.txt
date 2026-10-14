@@ -3,9 +3,6 @@ arm64 Contents/Resources/app.asar.unpacked/node_modules/@atom/nsfw/build/Release
 arm64 Contents/Resources/app.asar.unpacked/node_modules/@atom/watcher/build/Release/watcher.node
 arm64 Contents/Resources/app.asar.unpacked/node_modules/ctags/build/Release/ctags.node
 arm64 Contents/Resources/app.asar.unpacked/node_modules/fs-admin/build/Release/fs_admin.node
-? Contents/Resources/app.asar.unpacked/node_modules/fswin/arm64/fswin.node
-? Contents/Resources/app.asar.unpacked/node_modules/fswin/ia32/fswin.node
-? Contents/Resources/app.asar.unpacked/node_modules/fswin/x64/fswin.node
 arm64 Contents/Resources/app.asar.unpacked/node_modules/git-utils/build/Release/git.node
 arm64 Contents/Resources/app.asar.unpacked/node_modules/keyboard-layout/build/Release/keyboard-layout-manager.node
 arm64 Contents/Resources/app.asar.unpacked/node_modules/nslog/build/Release/nslog.node
