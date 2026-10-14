@@ -26,6 +26,7 @@ const argv = yargs
   .describe('create-debian-package', 'Create .deb package (Linux only)')
   .describe('create-rpm-package', 'Create .rpm package (Linux only)')
   .describe('compress-artifacts', 'Compress Atom binaries (and symbols on macOS)')
+  .describe('dump-symbols', 'Dump symbols for crash reports (unused in Atom Lite)')
   .describe('generate-api-docs', 'Only build the API documentation')
   .describe('install', 'Install Atom')
   .string('install')
@@ -83,7 +84,16 @@ if (!argv.existingBinaries) {
   prebuildLessCache()
   generateMetadata()
   generateAPIDocs()
-  if (!argv.generateApiDocs) {
+  // ATOM LITE: дамп символов пропускаем.
+  //
+  // Символы (.sym) нужны были только краш-репортеру: по ним он разворачивал
+  // стек в читаемый вид перед отправкой на серверы Atom. В этой сборке
+  // отправлять некуда и нечего — crashReporter отключён, пакет
+  // exception-reporting удалён (этап 1 — автономность).
+  //
+  // Заодно это снимает поломку: minidump (dump_syms) не умеет универсальные
+  // бинарники и падает с «object file contains more than one architecture».
+  if (!argv.generateApiDocs && argv.dumpSymbols) {
     binariesPromise = dumpSymbols()
   }
 }

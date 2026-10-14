@@ -1,10 +1,13 @@
-# Временный диагностический workflow: отвечает на один вопрос —
-# почему нативные модули на arm64-сборке получались x86_64.
+# Временный диагностический workflow: как получить ЧИСТЫЙ arm64, а не универсальный
+# бинарник, когда сборочный Node 12 (x64) работает под Rosetta.
 #
-# Гипотеза: gyp-генератор `make` (его node-gyp использует на macOS) не добавляет
-# флаг -arch. Архитектуру определяет сам clang — а clang, запущенный из
-# x64-процесса под Rosetta (наш Node 12), по умолчанию целится в x86_64.
-# Ни npm_config_arch, ни ATOM_ARCH, ни --arch=arm64 на это не влияют.
+# Что уже известно (прогон 38565636722):
+#   · clang из нативного shell  → arm64;
+#   · clang из node x64 (Rosetta) → x86_64;
+#   · --arch=arm64 без -arch в CFLAGS → x86_64 (gyp-генератор make флаг не передаёт);
+#   · -arch arm64 в CFLAGS/LDFLAGS → «x86_64 arm64» (универсальный).
+#
+# Осталось понять, откуда берётся вторая половина и как получить ровно arm64.
 #
 # Логи job-ов извне не читаются, поэтому итоги печатаются аннотациями.
 name: Диагностика нативных модулей
@@ -18,11 +21,7 @@ jobs:
   probe:
     name: Проба архитектур
     runs-on: macos-15
-    timeout-minutes: 60
-    env:
-      ATOM_ARCH: arm64
-      npm_config_arch: arm64
-      ATOM_ELECTRON_URL: https://artifacts.electronjs.org/headers/dist
+    timeout-minutes: 30
 
     steps:
       - name: Клонирование
@@ -37,11 +36,6 @@ jobs:
           node-version: '12.16.3'
           architecture: 'x64'
 
-      - name: Python 3.9
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.9'
-
       - name: Xcode 16.2
         run: |
           for v in 16.2 16.1 16.0; do
@@ -51,51 +45,32 @@ jobs:
             fi
           done
 
-      - name: Заголовки Electron 11.5.0
+      - name: Проба — компиляция мелочи разными флагами
         run: |
-          set -euo pipefail
-          VDIR="$HOME/.node-gyp/11.5.0"
-          rm -rf "$VDIR"; mkdir -p "$VDIR"
-          curl -fsSL --retry 2 -o /tmp/node-headers.tgz \
-            "$ATOM_ELECTRON_URL/v11.5.0/node-v11.5.0-headers.tar.gz"
-          tar -xzf /tmp/node-headers.tgz --strip-components=1 -C "$VDIR"
-          echo 9 > "$VDIR/installVersion"
-
-      - name: Тест 1 — чей clang
-        run: |
+          cat > /tmp/spawn.js <<'EOF'
+          const cp = require('child_process');
+          cp.execSync(process.argv.slice(2).join(' '), {stdio: 'inherit'});
+          EOF
           printf 'int main(void){return 0;}\n' > /tmp/t.c
-          clang -x c /tmp/t.c -o /tmp/from-shell
-          node -e "require('child_process').execSync('clang -x c /tmp/t.c -o /tmp/from-node')"
-          SHELL_ARCH=$(lipo -archs /tmp/from-shell)
-          NODE_ARCH=$(lipo -archs /tmp/from-node)
-          echo "shell=$(uname -m) node=$(node -p 'process.arch')"
-          echo "::notice title=проба::clang из нативного shell → $SHELL_ARCH"
-          echo "::notice title=проба::clang из node x64 (Rosetta) → $NODE_ARCH"
 
-      - name: Тест 2 — npm install с --arch=arm64 (как это делает apm)
-        continue-on-error: true
-        run: |
-          set +e
-          rm -rf /tmp/t2 && mkdir -p /tmp/t2 && cd /tmp/t2
-          printf '{"name":"t2","version":"1.0.0","dependencies":{"tree-sitter-json":"0.19.0"}}' > package.json
-          npm install --loglevel=error \
-            --target=11.5.0 --disturl="$ATOM_ELECTRON_URL" --runtime=electron --arch=arm64 >/dev/null 2>&1
-          A=$(find . -name '*.node' | head -1)
-          echo "::notice title=проба::--arch=arm64 без -arch в CFLAGS → $(lipo -archs "$A" 2>/dev/null || echo 'нет модуля')"
-          echo "::notice title=проба::строк с -arch в Makefile: $(grep -c -- '-arch' build/Makefile 2>/dev/null || echo 0)"
+          try() { # имя, дальше — аргументы clang (запуск из node x64)
+            local name="$1"; shift
+            rm -f "/tmp/$name"
+            node /tmp/spawn.js clang -x c "$@" /tmp/t.c -o "/tmp/$name" >/dev/null 2>&1
+            echo "::notice title=проба::$name → $(lipo -archs "/tmp/$name" 2>/dev/null || echo 'не собралось')"
+          }
 
-      - name: Тест 3 — то же, но с -arch arm64 в CFLAGS/CXXFLAGS/LDFLAGS
-        continue-on-error: true
-        run: |
-          set +e
-          rm -rf /tmp/t3 && mkdir -p /tmp/t3 && cd /tmp/t3
-          printf '{"name":"t3","version":"1.0.0","dependencies":{"tree-sitter-json":"0.19.0"}}' > package.json
-          CFLAGS="-arch arm64" CXXFLAGS="-arch arm64" LDFLAGS="-arch arm64" \
-            npm install --loglevel=error \
-            --target=11.5.0 --disturl="$ATOM_ELECTRON_URL" --runtime=electron --arch=arm64 >/dev/null 2>&1
-          A=$(find . -name '*.node' | head -1)
-          echo "::notice title=проба::--arch=arm64 c -arch arm64 в CFLAGS → $(lipo -archs "$A" 2>/dev/null || echo 'нет модуля')"
+          rm -f /tmp/native; clang -x c /tmp/t.c -o /tmp/native
+          echo "::notice title=проба::нативный shell, без флагов → $(lipo -archs /tmp/native)"
+
+          try noflags
+          try arch-arm64     -arch arm64
+          try target-arm64   -target arm64-apple-macos11.0
+          try arch-and-target -arch arm64 -target arm64-apple-macos11.0
+          try arch-x64       -arch x86_64
+
+          echo "::notice title=проба::окружение → $(env | grep -iE 'arch|flags' | sort | tr '\n' ' ')"
 
       - name: Итог
         if: always()
-        run: echo "готово — результат в аннотациях шагов выше"
+        run: echo "готово — результат в аннотациях"

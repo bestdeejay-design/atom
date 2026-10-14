@@ -11,7 +11,9 @@ module.exports = function(packagedAppPath) {
   const appArchivePath = path.join(CONFIG.buildOutputPath, getArchiveName());
   compress(packagedAppPath, appArchivePath);
 
-  if (process.platform === 'darwin') {
+  // ATOM LITE: символы больше не дампятся (см. script/build — краш-репортов
+  // нет, отправлять их некуда), поэтому каталога может просто не быть.
+  if (process.platform === 'darwin' && fs.existsSync(CONFIG.symbolsPath)) {
     const symbolsArchivePath = path.join(
       CONFIG.buildOutputPath,
       'atom-mac-symbols.zip'
