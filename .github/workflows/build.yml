@@ -32,6 +32,13 @@ name: Сборка Atom Lite
 # 5. apm И АРХИТЕКТУРА. atom-package-manager для macOS жёстко требует x64
 #    (lib/apm.js, getElectronArch) — поэтому нативной сборки под Apple Silicon
 #    не существовало в принципе. Правка живёт в script/lib/install-apm.js.
+#
+# 6. КРОСС-СБОРКА НА ОДНОМ МАШИНЕ. apm передаёт node-gyp --arch=arm64, но этого
+#    мало: на macOS node-gyp собирает через gyp-генератор `make`, а тот флаг
+#    -arch компилятору не передаёт вообще. Архитектуру выбирает сам clang — и,
+#    запущенный из x64-процесса (наш Node 12 под Rosetta), целится в x86_64.
+#    Поэтому для зависимостей приложения добавляем -arch <цель> в
+#    CFLAGS/CXXFLAGS/CPPFLAGS/LDFLAGS (script/lib/run-apm-install.js).
 
 on:
   push:
