@@ -64,35 +64,24 @@ const EXCLUDE_REGEXPS_SOURCES = [
   escapeRegExp(path.join('node_modules', 'fuzzy-native', 'node_modules')),
 
   // ───────────────────────────────────────────────────────────────────────────
-  // ATOM LITE: пакеты, которым в готовом редакторе делать нечего.
+  // ATOM LITE: что не попадает в готовое приложение.
   //
-  // Это не «на всякий случай»: цифры измерены прямо в сборке и записаны в
-  // docs/WEIGHT-RU.md. accessibility-developer-tools (28.6 МБ) приходит с
-  // devtron — расширением DevTools для разработки самого Atom, тестовые
-  // библиотеки (sinon 5.1 МБ, yargs-unparser 5.3 МБ, mocha-multi-reporters
-  // 5.0 МБ и прочие) нужны только спецификациям, а предсобранный кэш LESS
-  // (29.5 МБ) — это ускоритель первого запуска, который собирается отдельным
-  // шагом (см. script/build) и без которого стили собираются на месте.
+  // Здесь осталось только то, что действительно лишнее на macOS: инструменты
+  // подписи (они нужны сборке, а не редактору) и модули, существующие только
+  // для Windows. Всё остальное лишнее из приложения убрано иначе — тестовые
+  // и отладочные пакеты больше не ставятся вообще (см. package.json и
+  // docs/WEIGHT-RU.md), поэтому исключать их здесь нечего.
   //
-  // Вместе это ≈ 85 МБ из 495 МБ приложения и ни одной потерянной
-  // возможности: ни один из пакетов ниже не подключается кодом редактора
-  // (проверено поиском require по src, packages и spec).
+  // Отдельно про moment: раньше он исключался как «зависимость chart.js», но
+  // его читает пакет notifications (`notifications-log-item.coffee`) — без него
+  // падал бы журнал уведомлений. Возвращён в сборку.
   // ───────────────────────────────────────────────────────────────────────────
-
-  // DevTools-расширение для разработки; его же зависимость.
-  escapeRegExp(path.join('node_modules', 'devtron')),
-  escapeRegExp(path.join('node_modules', 'accessibility-developer-tools')),
-
-  // Не требуется ни одним require; moment попадал в сборку как зависимость
-  // chart.js и winreg.
-  escapeRegExp(path.join('node_modules', 'chart.js')),
-  escapeRegExp(path.join('node_modules', 'moment')),
 
   // Инструменты подписи и нотаризации — нужны только сборке (script/lib).
   escapeRegExp(path.join('node_modules', 'electron-osx-sign')),
   escapeRegExp(path.join('node_modules', 'electron-notarize')),
 
-  // Существуют только для Windows.
+  // Существуют только для Windows; подключаются лишь при запуске на Windows.
   escapeRegExp(path.join('node_modules', 'winreg')),
   escapeRegExp(path.join('node_modules', 'fswin')),
   escapeRegExp(path.join('node_modules', 'winattr')),
@@ -155,35 +144,6 @@ const EXCLUDE_REGEXPS_SOURCES = [
     'spec' +
     escapeRegExp(path.sep)
 ];
-
-// ATOM LITE: тестовые библиотеки в приложении не нужны — их используют только
-// спецификации из spec/, а готовый редактор их не запускает. Вместе это ещё
-// ≈ 19 МБ (sinon 5.1, yargs-unparser 5.3, mocha-multi-reporters 5.0, mocha 2.6,
-// chai, jasmine-*).
-//
-// Если спецификации всё-таки понадобится прогнать в собранном приложении,
-// библиотеки возвращаются одной переменной окружения:
-//
-//     ATOM_LITE_KEEP_TESTS=1 script/build
-//
-if (!process.env.ATOM_LITE_KEEP_TESTS) {
-  [
-    'chai',
-    'mocha',
-    'mocha-junit-reporter',
-    'mocha-multi-reporters',
-    'yargs-unparser',
-    'jasmine-json',
-    'jasmine-reporters',
-    'jasmine-tagged',
-    'sinon',
-    'mock-spawn'
-  ].forEach(packageName => {
-    EXCLUDE_REGEXPS_SOURCES.push(
-      escapeRegExp(path.join('node_modules', packageName))
-    );
-  });
-}
 
 // Ignore spec directories in all bundled packages
 for (let packageName in CONFIG.appMetadata.packageDependencies) {

@@ -452,6 +452,54 @@ jobs:
       # разбирать причину (логи шагов извне не читаются вовсе). Если сборка
       # прошла, но нужны цифры веса и списки модулей — попросите явно: либо
       # словом [logs] в сообщении коммита, либо галочкой при ручном запуске.
+      # Диета: проверка состава, а не только веса. Вес говорит, сколько
+      # приложение занимает; состав — что именно ушло и что осталось на месте.
+      # Список «обязаны быть» — защита от той же ошибки, из-за которой из
+      # сборки уже однажды выпал moment (его читает пакет notifications).
+      - name: Диета — состав приложения
+        if: success()
+        run: |
+          APP=out/app/node_modules
+          {
+            echo "=== убрано из зависимостей: в приложении их быть не должно ==="
+            gone=0; left=0
+            for p in mocha mocha-multi-reporters mocha-junit-reporter chai sinon \
+                     devtron accessibility-developer-tools chart.js highlight.js \
+                     yargs-unparser jasmine-tagged jasmine-reporters jasmine-json \
+                     mock-spawn dugite github telemetry-github @sinonjs \
+                     @atom/babel7-transpiler @babel/core; do
+              if [ -e "$APP/$p" ]; then
+                echo "  ОСТАЛСЯ  $p ($(du -sk "$APP/$p" 2>/dev/null | cut -f1) КБ)"
+                left=$((left+1))
+              else
+                gone=$((gone+1))
+              fi
+            done
+            echo "  ушли: $gone, остались: $left"
+
+            echo
+            echo "=== обязаны быть: без них редактор теряет возможности ==="
+            ok=0; absent=0
+            for p in moment notifications settings-view spell-check spelling-manager \
+                     less less-cache text-buffer superstring git-utils emoji-images \
+                     vscode-ripgrep tree-sitter babel-core typescript-simple \
+                     dajet-ui dajet-syntax joer-ui joer-syntax; do
+              if [ -e "$APP/$p" ]; then
+                echo "  есть  $p ($(du -sk "$APP/$p" 2>/dev/null | cut -f1) КБ)"
+                ok=$((ok+1))
+              else
+                echo "  НЕТ   $p"
+                absent=$((absent+1))
+              fi
+            done
+            echo "  на месте: $ok, не найдено: $absent"
+
+            echo
+            echo "=== размер дерева зависимостей приложения ==="
+            echo "  пакетов: $(ls "$APP" | wc -l | tr -d ' ')"
+            echo "  вес:     $(du -sh "$APP" 2>/dev/null | cut -f1)"
+          } > packages.txt 2>&1 || true
+
       - name: Логи для разбора — в репозиторий
         if: failure() || inputs.save-report || contains(github.event.head_commit.message, '[logs]')
         continue-on-error: true
@@ -459,7 +507,7 @@ jobs:
           git config user.name "Arena Agent"
           git config user.email "agent@arena.ai"
           mkdir -p .ci-logs
-          for f in build.log bootstrap.log rg.log mksnapshot-test.log modules-bootstrap.txt modules-app.txt weight.txt; do
+          for f in build.log bootstrap.log rg.log mksnapshot-test.log modules-bootstrap.txt modules-app.txt weight.txt packages.txt themes.txt; do
             if [ -f "$f" ]; then cp "$f" ".ci-logs/$f"; fi
           done
           ls -la out/ > .ci-logs/out-listing.txt 2>&1 || true
@@ -480,7 +528,7 @@ jobs:
               fi
             done
             echo "=== темы в package.json приложения ==="
-            grep -o '"\(dajet\|joer\)-[a-z]*": "file:./packages/[a-z-]*"' out/app/package.json || echo "в package.json приложения тем нет"
+            grep -o '"\(dajet\|joer\)-[a-z]*": \{0,1\}"file:./packages/[a-z-]*"' out/app/package.json || echo "в package.json приложения тем нет"
             echo "=== core.themes по умолчанию в собранном коде ==="
             grep -a -o "default: \['dajet-ui', 'dajet-syntax'\]" out/app/src/config-schema.js || echo "не найдено (код в снапшоте или изменён формат)"
           } > .ci-logs/themes.txt 2>&1 || true

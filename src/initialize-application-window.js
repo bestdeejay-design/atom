@@ -26,7 +26,6 @@ if (global.isGeneratingSnapshot) {
   require('deprecation-cop');
   require('dev-live-reload');
   require('encoding-selector');
-  require('dalek');
   require('find-and-replace');
   require('fuzzy-finder');
   require('git-diff');
