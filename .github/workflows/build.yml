@@ -1,40 +1,37 @@
 name: Сборка Atom Lite
 
-# ATOM LITE: заменяет мёртвый Azure Pipelines (script/vsts), который ссылался
-# на несуществующий образ macos-10.15 и Node 12.16.3 из 2020 года.
+# Заменяет мёртвый Azure Pipelines (script/vsts): он ссылался на образ
+# macos-10.15, которого больше не существует, и на Node 12.16.3 из 2020 года.
 #
 # Даёт то, чего у форка не было: возможность собрать Atom.app в облаке GitHub
 # и скачать готовый архив, не настраивая сборочное окружение у себя.
 # Для публичных репозиториев macOS-раннеры бесплатны.
 #
-# ── Про архитектуры ────────────────────────────────────────────────────────
-# Бесплатные образы macOS у GitHub — только arm64 (Apple Silicon).
-# Интеловские ярлыки вроде macos-15-intel остались на платных тарифах.
+# ── Что пришлось починить, чтобы это заработало ─────────────────────────────
 #
-# Скрипты сборки Atom написаны под Node 12.16.3, а Node 12 существует
-# только для x64. Поэтому мы ставим Rosetta 2 и запускаем Node 12 как
-# x64-процесс — на arm64-машине это работает.
+# 1. АРХИТЕКТУРА. Бесплатные macOS-раннеры у GitHub только arm64 (Apple
+#    Silicon); интеловские ярлыки вроде macos-15-intel остались на платных
+#    тарифах. Скрипты сборки Atom написаны под Node 12.16.3, а Node 12
+#    существует только для x64 — поэтому ставим Rosetta 2 и запускаем Node 12
+#    как x64-процесс. Целевую архитектуру задаём отдельно, через ATOM_ARCH.
 #
-# ── Про Xcode ──────────────────────────────────────────────────────────────
-# С Xcode 16.3 Apple начала определять TARGET_OS_MAC. От этого ломается
-# старый zlib внутри git-utils/libgit2: он подменяет fdopen, и системный
-# <stdio.h> не парсится (_stdio.h:318: error: expected ')'). Поэтому обе
-# задачи переключаются на Xcode 16.2, где бага ещё нет.
+# 2. XCODE. С Xcode 16.3 Apple начала определять TARGET_OS_MAC, от чего ломается
+#    старый zlib внутри git-utils/libgit2: он подменяет fdopen, и системный
+#    <stdio.h> перестаёт компилироваться (_stdio.h:318: error: expected ')').
+#    Обе задачи поэтому переключаются на Xcode 16.2.
 #
-# ── Про заголовки Electron ─────────────────────────────────────────────────
-# apm передаёт node-gyp адрес заголовков https://atom.io/download/electron —
-# домен мёртв: вместо архива приходит HTML-страница, и сборка нативных
-# модулей падает на распаковке tar. Поэтому заголовки заранее кладутся
-# в кэш node-gyp (~/.node-gyp/11.5.0), node-gyp просят пользоваться кэшем,
-# а ATOM_ELECTRON_URL переопределён на рабочий artifacts.electronjs.org
-# (ровно так же сделано в живом форке — Pulsar, репозиторий pulsar-edit/ppm).
+# 3. МЁРТВЫЙ atom.io. apm передаёт node-gyp адрес заголовков Electron
+#    https://atom.io/download/electron — домен закрыт вместе с проектом, вместо
+#    архива приходит HTML-страница. Скачиваем заголовки сами (ATOM_ELECTRON_URL
+#    + прогрев кэша node-gyp), как это сделано в живом форке Pulsar.
 #
-# Отсюда две задачи:
-#   · x64   — заведомо рабочий путь, повторяет конфигурацию оригинального CI.
-#             Приложение соберётся интеловским и запустится через Rosetta 2.
-#   · arm64 — нативная сборка. Требует пересборки нативных модулей после
-#             bootstrap (см. пояснение в задаче), поэтому помечена как
-#             экспериментальная.
+# 4. APPLE И iconv. В Xcode 16 тип iconv_t перестал быть void* и стал указателем
+#    на неполный тип, из-за чего не собирается superstring — ядро текстовых
+#    буферов Atom. Лечится заголовком script/macos-iconv-compat.h.
+#
+# 5. apm И АРХИТЕКТУРА. atom-package-manager для macOS жёстко требует x64
+#    (lib/apm.js, getElectronArch) — поэтому нативной сборки под Apple Silicon
+#    не существовало в принципе. Правка живёт в script/lib/install-apm.js.
 
 on:
   push:
@@ -43,8 +40,9 @@ on:
 
 jobs:
   # ═══════════════════════════════════════════════════════════════════════════
-  # Основная задача: интеловская сборка. Повторяет то, что работало в CI
-  # оригинального Atom, поэтому самая предсказуемая.
+  # Основная задача: сборка под Intel. Именно так собирался Atom всегда,
+  # поэтому путь самый предсказуемый. На Apple Silicon приложение работает
+  # через Rosetta 2 (она же нужна сборочному Node 12).
   # ═══════════════════════════════════════════════════════════════════════════
   build-x64:
     name: macOS x64 (через Rosetta)
@@ -112,9 +110,9 @@ jobs:
           sw_vers
 
       # node-gyp скачивает заголовки Electron с адреса, который ему передал
-      # apm. apm 2.6.2 по умолчанию указывает на мёртвый сайт:
-      # https://atom.io/download/electron — вместо архива приходит HTML-страница,
-      # и сборка падает на распаковке tar. Кладём заголовки в кэш заранее.
+      # apm. apm 2.6.2 по умолчанию указывает на мёртвый сайт
+      # https://atom.io/download/electron. Скачиваем сами через curl:
+      # он умеет следовать редиректам, а node-gyp 5 — нет.
       - name: Заголовки Electron 11.5.0 в кэш node-gyp
         run: |
           set -euo pipefail
@@ -159,7 +157,7 @@ jobs:
       - name: Диагностика bootstrap — ошибки npm
         if: failure()
         run: |
-          grep -a "npm ERR" bootstrap.log | tail -12 | tr -d '\r' | while IFS= read -r l; do
+          grep -a "npm ERR" bootstrap.log | tail -8 | tr -d '\r' | while IFS= read -r l; do
             echo "::error title=npm-err::$l"
           done
 
@@ -184,7 +182,7 @@ jobs:
       - name: Диагностика bootstrap — контекст
         if: failure()
         run: |
-          tail -30 bootstrap.log | tr -d '\r' | while IFS= read -r l; do
+          tail -20 bootstrap.log | tr -d '\r' | while IFS= read -r l; do
             echo "::error title=context::$l"
           done
 
@@ -201,12 +199,27 @@ jobs:
             echo "::error title=build::$l"
           done
 
-      - name: Что получилось
+      # Печатаем факты о сборке аннотациями: обычные логи runner не отдаёт,
+      # а аннотации читаются через API GitHub — так результат можно проверить.
+      - name: Проверка — архитектура и размер
         if: success()
         run: |
-          ls -lh out/ | head -20
-          du -sh out/*.app 2>/dev/null || true
-          file out/Atom.app/Contents/MacOS/Atom 2>/dev/null || true
+          APP="out/Atom.app"
+          BIN="$APP/Contents/MacOS/Atom"
+          echo "::notice title=проверка::бинарник: $(lipo -archs "$BIN")"
+          echo "::notice title=проверка::приложение $(du -sh "$APP" | cut -f1), архив $(ls -lh out/*.zip | awk '{print $5}')"
+          echo "::notice title=проверка::нативных модулей .node: $(find "$APP" -name '*.node' | wc -l | tr -d ' ')"
+          find "$APP" -name 'v8_context_snapshot*' | while IFS= read -r f; do
+            echo "::notice title=проверка::$(basename "$f") — $(lipo -archs "$f" 2>/dev/null || echo 'не Mach-O')"
+          done
+
+      - name: Проверка — архитектура нативных модулей
+        if: success()
+        run: |
+          APP="out/Atom.app"
+          find "$APP" -name '*.node' | sort | head -14 | while IFS= read -r f; do
+            echo "::notice title=модуль::$(echo "$f" | sed "s|.*/node_modules/||") → $(lipo -archs "$f" 2>/dev/null || echo '?')"
+          done
 
       - name: Загрузить артефакт
         if: success()
@@ -225,31 +238,30 @@ jobs:
           if-no-files-found: error
 
   # ═══════════════════════════════════════════════════════════════════════════
-  # Экспериментальная задача: нативная arm64-сборка.
+  # Нативная сборка под Apple Silicon.
   #
-  # Почему нельзя просто задать npm_config_arch=arm64 на весь процесс:
-  # установщик apm (`install-apm.js`) в своём postinstall запускает
-  # `./bin/npm rebuild`, который собирает нативные модули под ту архитектуру,
-  # что указана в npm_config_arch. Получается x64-процесс, собирающий
-  # arm64-модули для себя же — это и валило bootstrap.
+  # Раньше её не существовало: apm для macOS жёстко требовал x64. Теперь apm
+  # (после правки в script/lib/install-apm.js) берёт архитектуру из ATOM_ARCH,
+  # поэтому достаточно задать её здесь — дальше установка нативных модулей,
+  # загрузка Electron и упаковка идут под arm64, как обычно.
   #
-  # Поэтому в два приёма: bootstrap под x64 (как в рабочем CI),
-  # затем отдельная пересборка нативных модулей под arm64+Electron,
-  # и только потом сборка приложения под arm64.
+  # npm_config_arch=arm64 нужен ещё и потому, что от него зависит загрузка
+  # electron-mksnapshot: снапшот V8 обязан быть собран той же архитектурой,
+  # что и целевой Electron.
   # ═══════════════════════════════════════════════════════════════════════════
   build-arm64:
-    name: macOS arm64 (нативная, экспериментальная)
+    name: macOS arm64 (нативная)
     runs-on: macos-15
     timeout-minutes: 180
-    continue-on-error: true
 
     env:
+      # Целевая архитектура: apm читает ATOM_ARCH (наша правка),
+      # script/config.js — npm_config_arch.
+      ATOM_ARCH: arm64
+      npm_config_arch: arm64
       npm_config_build_from_source: 'true'
-      # Адрес заголовков Electron для apm (иначе — мёртвый atom.io).
       ATOM_ELECTRON_URL: https://artifacts.electronjs.org/headers/dist
-      # Разрешить node-gyp брать заголовки из готового кэша ~/.node-gyp.
       npm_config_ensure: 'true'
-      # См. пояснение в задаче build-x64 и script/macos-iconv-compat.h.
       CFLAGS: -include ${{ github.workspace }}/script/macos-iconv-compat.h
       CXXFLAGS: -include ${{ github.workspace }}/script/macos-iconv-compat.h
 
@@ -257,7 +269,7 @@ jobs:
       - name: Клонирование
         uses: actions/checkout@v4
 
-      - name: Rosetta 2 (для Node 12)
+      - name: Rosetta 2 (для Node 12 — сборки под arm64 у него нет)
         run: sudo softwareupdate --install-rosetta --agree-to-license
 
       - name: Node.js 12.16.3 (x64)
@@ -266,7 +278,7 @@ jobs:
           node-version: '12.16.3'
           architecture: 'x64'
 
-      - name: Python 3.9
+      - name: Python 3.9 (node-gyp 5 не работает с Python 3.12+)
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
@@ -284,6 +296,15 @@ jobs:
           xcodebuild -version
           echo "SDK: $(xcrun --show-sdk-version)"
 
+      - name: Окружение
+        run: |
+          echo "Машина:       $(uname -m)"
+          echo "Node:         $(node --version) (process.arch=$(node -p 'process.arch'))"
+          echo "npm:          $(npm --version)"
+          echo "Python:       $(python3 --version)"
+          echo "Целевая арх.: $ATOM_ARCH (npm_config_arch=$npm_config_arch)"
+          sw_vers
+
       - name: Заголовки Electron 11.5.0 в кэш node-gyp
         run: |
           set -euo pipefail
@@ -297,8 +318,8 @@ jobs:
           for url in \
             "$BASE/v11.5.0/node-v11.5.0-headers.tar.gz" \
             "https://electronjs.org/headers/v11.5.0/node-v11.5.0-headers.tar.gz" \
-            "https://artifacts.electronjs.org/headers/dist/v11.5.0/node-v11.5.0-darwin-x64.tar.gz" \
             "https://artifacts.electronjs.org/headers/dist/v11.5.0/node-v11.5.0-darwin-arm64.tar.gz" \
+            "https://artifacts.electronjs.org/headers/dist/v11.5.0/node-v11.5.0-darwin-x64.tar.gz" \
           ; do
             echo "Пробую: $url"
             if curl -fsSL --retry 2 --connect-timeout 20 -o /tmp/node-headers.tgz "$url" \
@@ -318,10 +339,8 @@ jobs:
           echo "::error title=headers::Заголовки Electron 11.5.0 не скачались ни с одного зеркала"
           exit 1
 
-      - name: Bootstrap (под x64 — так apm ставится без ошибок)
+      - name: Bootstrap (нативные модули под arm64)
         id: bootstrap
-        env:
-          npm_config_arch: x64
         run: |
           set +e
           script/bootstrap 2>&1 | tee bootstrap.log
@@ -332,6 +351,13 @@ jobs:
         run: |
           grep -a "npm ERR" bootstrap.log | tail -8 | tr -d '\r' | while IFS= read -r l; do
             echo "::error title=npm-err::$l"
+          done
+
+      - name: Диагностика bootstrap — ошибки сборки
+        if: failure()
+        run: |
+          grep -aiE "gyp ERR|error:|fatal error|not found:|ETARGET|E404|ENOTFOUND|Failed to" bootstrap.log | tail -10 | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=build-err::$l"
           done
 
       - name: Диагностика bootstrap — окно вокруг первой ошибки
@@ -352,34 +378,8 @@ jobs:
             echo "::error title=context::$l"
           done
 
-      - name: Пересборка нативных модулей под arm64 + Electron 11.5.0
-        if: success()
-        id: rebuild
-        run: |
-          set +e
-          APM_NPM="$GITHUB_WORKSPACE/apm/node_modules/atom-package-manager/bin/npm"
-          ls -l "$APM_NPM" || exit 1
-          npm_config_arch=arm64 npm_config_runtime=electron npm_config_target=11.5.0 \
-            "$APM_NPM" rebuild \
-              --runtime=electron \
-              --target=11.5.0 \
-              --arch=arm64 \
-              --dist-url=https://artifacts.electronjs.org/headers/dist \
-              --build-from-source 2>&1 | tee rebuild.log
-          exit ${PIPESTATUS[0]}
-
-      - name: Диагностика пересборки
-        if: failure()
-        run: |
-          grep -aiE "gyp ERR|error:|fatal error|clang|ld:" rebuild.log | tail -25 | tr -d '\r' | while IFS= read -r l; do
-            echo "::error title=rebuild::$l"
-          done
-
       - name: Сборка приложения под arm64
-        if: success()
         id: build
-        env:
-          npm_config_arch: arm64
         run: |
           set -o pipefail
           script/build --compress-artifacts 2>&1 | tee build.log
@@ -391,11 +391,33 @@ jobs:
             echo "::error title=build::$l"
           done
 
-      - name: Проверить, что бинарник действительно arm64
+      - name: Проверка — архитектура и размер
         if: success()
         run: |
-          file out/Atom.app/Contents/MacOS/Atom
-          ls -lh out/ | head -20
+          APP="out/Atom.app"
+          BIN="$APP/Contents/MacOS/Atom"
+          ARCHS=$(lipo -archs "$BIN")
+          echo "::notice title=проверка::бинарник: $ARCHS"
+          echo "::notice title=проверка::приложение $(du -sh "$APP" | cut -f1), архив $(ls -lh out/*.zip | awk '{print $5}')"
+          echo "::notice title=проверка::нативных модулей .node: $(find "$APP" -name '*.node' | wc -l | tr -d ' ')"
+          find "$APP" -name 'v8_context_snapshot*' | while IFS= read -r f; do
+            echo "::notice title=проверка::$(basename "$f") — $(lipo -archs "$f" 2>/dev/null || echo 'не Mach-O')"
+          done
+          if [ "$ARCHS" != "arm64" ]; then
+            echo "::error title=архитектура::ожидался arm64, а получился $ARCHS"
+            exit 1
+          fi
+
+      - name: Проверка — архитектура нативных модулей
+        if: success()
+        run: |
+          APP="out/Atom.app"
+          BAD=0
+          find "$APP" -name '*.node' | sort | while IFS= read -r f; do
+            A=$(lipo -archs "$f" 2>/dev/null || echo '?')
+            echo "::notice title=модуль::$(echo "$f" | sed "s|.*/node_modules/||") → $A"
+            case "$A" in *arm64*) ;; *) echo "::error title=битый модуль::$(basename "$f") собран не под arm64: $A";; esac
+          done
 
       - name: Загрузить артефакт
         if: success()
