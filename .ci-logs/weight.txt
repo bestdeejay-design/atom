@@ -1,16 +1,16 @@
-ВСЁ ПРИЛОЖЕНИЕ (распакованное) 429.0 МБ
-Electron Framework (Chromium + V8)                   194.0 МБ
-Contents/Frameworks, всего                      196.4 МБ
-Contents/Resources, всего                       232.4 МБ
-  из них app.asar — код редактора и node_modules 208.4 МБ
+ВСЁ ПРИЛОЖЕНИЕ (распакованное) 429.6 МБ
+Electron Framework (Chromium + V8)                   194.4 МБ
+Contents/Frameworks, всего                      196.9 МБ
+Contents/Resources, всего                       232.5 МБ
+  из них app.asar — код редактора и node_modules 208.7 МБ
   из них app.asar.unpacked — нативные модули 20.9 МБ
   из них app — то, что вне asar (apm больше не копируется) 0.0 МБ
-архив out/atom-mac.zip (то, что качается) 144.2 МБ
+архив out/atom-mac.zip (то, что качается) 144.1 МБ
 --- верхний уровень Contents/Resources ---
-213444	out/Atom Dev.app/Contents/Resources/app.asar
+213736	out/Atom Dev.app/Contents/Resources/app.asar
 21452	out/Atom Dev.app/Contents/Resources/app.asar.unpacked
 1224	out/Atom Dev.app/Contents/Resources/atom.icns
-944	out/Atom Dev.app/Contents/Resources/LICENSE.md
+784	out/Atom Dev.app/Contents/Resources/LICENSE.md
 628	out/Atom Dev.app/Contents/Resources/file.icns
 268	out/Atom Dev.app/Contents/Resources/electron.icns
 8	out/Atom Dev.app/Contents/Resources/app
@@ -23,9 +23,9 @@ Contents/Resources, всего                       232.4 МБ
 0	out/Atom Dev.app/Contents/Resources/te.lproj
 0	out/Atom Dev.app/Contents/Resources/ta.lproj
 --- что попадёт в app.asar: out/app, верхний уровень ---
-262324	out/app/node_modules
+250556	out/app/node_modules
 2020	out/app/src
-864	out/app/package.json
+772	out/app/package.json
 356	out/app/static
 328	out/app/resources
 136	out/app/spec
@@ -42,9 +42,9 @@ Contents/Resources, всего                       232.4 МБ
 11140	out/app/node_modules/tree-sitter-cpp
 10960	out/app/node_modules/emoji-images
 10348	out/app/node_modules/tree-sitter-ruby
-5968	out/app/node_modules/es-abstract
 5000	out/app/node_modules/natural
 4988	out/app/node_modules/babel-core
+4704	out/app/node_modules/moment
 4436	out/app/node_modules/tree-sitter-rust
 4040	out/app/node_modules/core-js
 4024	out/app/node_modules/vscode-ripgrep
@@ -56,7 +56,6 @@ Contents/Resources, всего                       232.4 МБ
 2556	out/app/node_modules/spellchecker
 2436	out/app/node_modules/tree-sitter-javascript
 2412	out/app/node_modules/underscore
-2408	out/app/node_modules/highlight.js
 2376	out/app/node_modules/tree-sitter-go
 2116	out/app/node_modules/lodash
 2100	out/app/node_modules/es5-ext
@@ -69,12 +68,13 @@ Contents/Resources, всего                       232.4 МБ
 1356	out/app/node_modules/jschardet
 1320	out/app/node_modules/tar
 1304	out/app/node_modules/symbols-view
-1260	out/app/node_modules/requirejs
 1208	out/app/node_modules/commoner
 1180	out/app/node_modules/text-buffer
-1164	out/app/node_modules/@sinonjs
 984	out/app/node_modules/async
+896	out/app/node_modules/recast
+880	out/app/node_modules/yargs
+828	out/app/node_modules/chevrotain
 --- out/app, сумма по расширениям (что занимает место) ---
-    1625
+    1467
 файлов .map и .md: (число выше)
-848K	total
+700K	total

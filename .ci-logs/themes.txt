@@ -18,6 +18,9 @@ index.less LICENSE.md package.json README.md styles
     есть index.less
     есть styles/syntax-variables.less
 === темы в package.json приложения ===
-в package.json приложения тем нет
+"dajet-syntax":"file:./packages/dajet-syntax"
+"dajet-ui":"file:./packages/dajet-ui"
+"joer-syntax":"file:./packages/joer-syntax"
+"joer-ui":"file:./packages/joer-ui"
 === core.themes по умолчанию в собранном коде ===
 default: ['dajet-ui', 'dajet-syntax']
