@@ -38,6 +38,12 @@ on:
     branches: ['**']
   workflow_dispatch:
 
+# Нужно, чтобы при падении сборки CI мог сохранить логи в репозиторий: обычные
+# логи job'ов недоступны извне, а аннотации ограничены по количеству и приходят
+# в произвольном порядке.
+permissions:
+  contents: write
+
 jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   # Основная задача: сборка под Intel. Именно так собирался Atom всегда,
@@ -205,15 +211,47 @@ jobs:
       - name: Сборка приложения
         id: build
         run: |
-          set -o pipefail
+          set +e
           script/build --compress-artifacts 2>&1 | tee build.log
+          CODE=${PIPESTATUS[0]}
+          echo "код возврата script/build: $CODE"
+          if [ "$CODE" -ne 0 ]; then
+            echo "::error title=код возврата::script/build завершился с кодом $CODE (137 — убит по памяти, 143 — прерван)"
+            exit 1
+          fi
 
-      - name: Диагностика сборки
+      - name: Диагностика сборки — ошибки по порядку
         if: failure()
         run: |
-          tail -30 build.log | tr -d '\r' | while IFS= read -r l; do
-            echo "::error title=build::$l"
+          echo "::error title=лог::строк в build.log: $(wc -l < build.log | tr -d ' ')"
+          grep -a -n -iE "error|failed|cannot|unable|not found|killed|traceback|no such file" build.log | head -10 | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=ошибка::$l"
           done
+
+      - name: Диагностика сборки — хвост лога
+        if: failure()
+        run: |
+          tail -10 build.log | grep -a . | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=хвост::$l"
+          done
+
+      # Аннотации ограничены по количеству и приходят в произвольном порядке,
+      # а логи job'ов недоступны извне. Поэтому при падении сохраняем логи
+      # прямо в репозиторий — с пометкой [skip ci], чтобы не гонять сборку снова.
+      - name: Логи для разбора — в репозиторий
+        if: failure()
+        continue-on-error: true
+        run: |
+          git config user.name "Arena Agent"
+          git config user.email "agent@arena.ai"
+          mkdir -p .ci-logs
+          for f in build.log bootstrap.log rg.log; do
+            if [ -f "$f" ]; then cp "$f" ".ci-logs/$f"; fi
+          done
+          ls -la out/ > .ci-logs/out-listing.txt 2>&1 || true
+          git add -f .ci-logs
+          git commit -qm "ci: логи прогона ${{ github.run_id }} [skip ci]"
+          git push -q origin HEAD:${{ github.ref_name }}
 
       # Печатаем факты о сборке аннотациями: обычные логи runner не отдаёт,
       # а аннотации читаются через API GitHub — так результат можно проверить.
@@ -416,15 +454,47 @@ jobs:
       - name: Сборка приложения под arm64
         id: build
         run: |
-          set -o pipefail
+          set +e
           script/build --compress-artifacts 2>&1 | tee build.log
+          CODE=${PIPESTATUS[0]}
+          echo "код возврата script/build: $CODE"
+          if [ "$CODE" -ne 0 ]; then
+            echo "::error title=код возврата::script/build завершился с кодом $CODE (137 — убит по памяти, 143 — прерван)"
+            exit 1
+          fi
 
-      - name: Диагностика сборки
+      - name: Диагностика сборки — ошибки по порядку
         if: failure()
         run: |
-          tail -30 build.log | tr -d '\r' | while IFS= read -r l; do
-            echo "::error title=build::$l"
+          echo "::error title=лог::строк в build.log: $(wc -l < build.log | tr -d ' ')"
+          grep -a -n -iE "error|failed|cannot|unable|not found|killed|traceback|no such file" build.log | head -10 | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=ошибка::$l"
           done
+
+      - name: Диагностика сборки — хвост лога
+        if: failure()
+        run: |
+          tail -10 build.log | grep -a . | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=хвост::$l"
+          done
+
+      # Аннотации ограничены по количеству и приходят в произвольном порядке,
+      # а логи job'ов недоступны извне. Поэтому при падении сохраняем логи
+      # прямо в репозиторий — с пометкой [skip ci], чтобы не гонять сборку снова.
+      - name: Логи для разбора — в репозиторий
+        if: failure()
+        continue-on-error: true
+        run: |
+          git config user.name "Arena Agent"
+          git config user.email "agent@arena.ai"
+          mkdir -p .ci-logs
+          for f in build.log bootstrap.log rg.log; do
+            if [ -f "$f" ]; then cp "$f" ".ci-logs/$f"; fi
+          done
+          ls -la out/ > .ci-logs/out-listing.txt 2>&1 || true
+          git add -f .ci-logs
+          git commit -qm "ci: логи прогона ${{ github.run_id }} [skip ci]"
+          git push -q origin HEAD:${{ github.ref_name }}
 
       - name: Проверка — архитектура и размер
         if: success()
