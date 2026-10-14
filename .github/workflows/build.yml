@@ -448,6 +448,19 @@ jobs:
           git commit -qm "ci: логи прогона ${{ github.run_id }} [skip ci]"
           git push -q origin HEAD:${{ github.ref_name }}
 
+      - name: Отчёт о сборке — в артефакт
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atom-macos-report
+          path: |
+            weight.txt
+            modules-app.txt
+            modules-bootstrap.txt
+            rg.log
+            mksnapshot-test.log
+          if-no-files-found: ignore
+
       - name: Загрузить артефакт
         if: success()
         run: |
