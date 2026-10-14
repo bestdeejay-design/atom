@@ -210,23 +210,75 @@ jobs:
 
       # Отдельная проверка генератора снапшота: если он не работает для этой
       # архитектуры, лучше узнать об этом до многоминутной сборки.
+      # Печатаем архитектуры всех нативных модулей сразу после bootstrap:
+      # так видно, что именно (и где) осталось собранным под x86_64 ещё до упаковки.
+      - name: Диагностика — архитектуры нативных модулей
+        if: always()
+        run: |
+          set +e
+          : > modules-bootstrap.txt
+          for d in node_modules apm/node_modules apm/node_modules/atom-package-manager/node_modules script/node_modules out/app/node_modules; do
+            echo "=== $d ===" >> modules-bootstrap.txt
+            if [ -d "$d" ]; then
+              find "$d" -name '*.node' 2>/dev/null | sort | while IFS= read -r f; do
+                printf '%s %s\n' "$(lipo -archs "$f" 2>/dev/null || echo '?')" "$f" >> modules-bootstrap.txt
+              done
+            else
+              echo "(нет каталога)" >> modules-bootstrap.txt
+            fi
+          done
+          echo "итого .node в корневом node_modules: $(find node_modules -name '*.node' 2>/dev/null | wc -l | tr -d ' ')" >> modules-bootstrap.txt
+          wc -l modules-bootstrap.txt
+      # mksnapshot на arm64 падает с «Unable to open file "gen/v8/embedded.S"»:
+      # бинарник пишет вспомогательный файл относительно рабочего каталога,
+      # а обёртка electron-mksnapshot запускает его из временного каталога, где
+      # никакого gen/v8 нет. Проверяем сразу несколько вариантов запуска —
+      # из лога будет видно, какой из них рабочий.
       - name: Проверка mksnapshot
         run: |
           set +e
+          BIN_DIR=script/node_modules/electron-mksnapshot/bin
+          {
+            echo "=== содержимое $BIN_DIR ==="
+            find "$BIN_DIR" -maxdepth 3 2>/dev/null | sort | head -60
+            echo "=== флаги mksnapshot про embedded/startup ==="
+            MKS=$(find "$BIN_DIR" -maxdepth 1 -type f -name 'mksnapshot' | head -1)
+            if [ -n "$MKS" ]; then
+              "$MKS" --help 2>&1 | grep -i -E "embedded|startup" | head -12
+            else
+              echo "бинарь mksnapshot не найден"
+            fi
+          } > mksnapshot-test.log 2>&1
           echo 'var snapshotTest = 1;' > "$RUNNER_TEMP/snapshot-test.js"
-          mkdir -p "$RUNNER_TEMP/mks-out"
-          node script/node_modules/electron-mksnapshot/mksnapshot.js "$RUNNER_TEMP/snapshot-test.js" --output_dir "$RUNNER_TEMP/mks-out" > mksnapshot-test.log 2>&1
-          CODE=$?
-          echo "код возврата mksnapshot: $CODE" >> mksnapshot-test.log
-          ls -la "$RUNNER_TEMP/mks-out" >> mksnapshot-test.log 2>&1
-          if [ -f "$RUNNER_TEMP/mks-out/v8_context_snapshot.bin" ]; then
-            echo "::notice title=mksnapshot::снапшот создан (код $CODE): $(file -b "$RUNNER_TEMP/mks-out/v8_context_snapshot.bin")"
-          else
-            echo "::error title=mksnapshot::снапшот НЕ создан (код $CODE)"
-            tail -12 mksnapshot-test.log | tr -d '\r' | while IFS= read -r l; do
+          try_run() {
+            local label="$1"; shift
+            local dir="$RUNNER_TEMP/mks-out-$label"
+            rm -rf "$dir"; mkdir -p "$dir"
+            echo "=== попытка «$label» ===" >> mksnapshot-test.log
+            node script/node_modules/electron-mksnapshot/mksnapshot.js "$RUNNER_TEMP/snapshot-test.js" --output_dir "$dir" "$@" >> mksnapshot-test.log 2>&1
+            local code=$?
+            echo "код возврата «$label»: $code" >> mksnapshot-test.log
+            ls -la "$dir" >> mksnapshot-test.log 2>&1
+            return $code
+          }
+          try_run base; CODE_BASE=$?
+          try_run devnull --embedded_src=/dev/null; CODE_NULL=$?
+          try_run file --embedded_src="$RUNNER_TEMP/embedded.S"; CODE_FILE=$?
+          FOUND=""
+          for label in base devnull file; do
+            f="$RUNNER_TEMP/mks-out-$label/v8_context_snapshot.bin"
+            if [ -f "$f" ]; then
+              echo "::notice title=mksnapshot::снапшот создан вариантом «$label»: $(file -b "$f")"
+              FOUND="$label"
+            fi
+          done
+          if [ -z "$FOUND" ]; then
+            echo "::error title=mksnapshot::снапшот НЕ создан ни одним способом (коды: $CODE_BASE/$CODE_NULL/$CODE_FILE)"
+            grep -a -E "Unable|Error|error|Loading" mksnapshot-test.log | tail -14 | tr -d '\r' | while IFS= read -r l; do
               echo "::error title=mksnapshot::$l"
             done
           fi
+
 
       - name: Сборка приложения
         id: build
@@ -258,20 +310,6 @@ jobs:
       # Аннотации ограничены по количеству и приходят в произвольном порядке,
       # а логи job'ов недоступны извне. Поэтому при падении сохраняем логи
       # прямо в репозиторий — с пометкой [skip ci], чтобы не гонять сборку снова.
-      - name: Логи для разбора — в репозиторий
-        if: failure()
-        continue-on-error: true
-        run: |
-          git config user.name "Arena Agent"
-          git config user.email "agent@arena.ai"
-          mkdir -p .ci-logs
-          for f in build.log bootstrap.log rg.log mksnapshot-test.log; do
-            if [ -f "$f" ]; then cp "$f" ".ci-logs/$f"; fi
-          done
-          ls -la out/ > .ci-logs/out-listing.txt 2>&1 || true
-          git add -f .ci-logs
-          git commit -qm "ci: логи прогона ${{ github.run_id }} [skip ci]"
-          git push -q origin HEAD:${{ github.ref_name }}
 
       # Печатаем факты о сборке аннотациями: обычные логи runner не отдаёт,
       # а аннотации читаются через API GitHub — так результат можно проверить.
@@ -305,6 +343,21 @@ jobs:
           find "$APP" -name '*.node' | sort | head -14 | while IFS= read -r f; do
             echo "::notice title=модуль::$(echo "$f" | sed "s|.*/node_modules/||") → $(lipo -archs "$f" 2>/dev/null || echo '?')"
           done
+
+      - name: Логи для разбора — в репозиторий
+        if: failure()
+        continue-on-error: true
+        run: |
+          git config user.name "Arena Agent"
+          git config user.email "agent@arena.ai"
+          mkdir -p .ci-logs
+          for f in build.log bootstrap.log rg.log mksnapshot-test.log modules-bootstrap.txt modules-app.txt; do
+            if [ -f "$f" ]; then cp "$f" ".ci-logs/$f"; fi
+          done
+          ls -la out/ > .ci-logs/out-listing.txt 2>&1 || true
+          git add -f .ci-logs
+          git commit -qm "ci: логи прогона ${{ github.run_id }} [skip ci]"
+          git push -q origin HEAD:${{ github.ref_name }}
 
       - name: Загрузить артефакт
         if: success()
@@ -478,23 +531,75 @@ jobs:
 
       # Отдельная проверка генератора снапшота: если он не работает для этой
       # архитектуры, лучше узнать об этом до многоминутной сборки.
+      # Печатаем архитектуры всех нативных модулей сразу после bootstrap:
+      # так видно, что именно (и где) осталось собранным под x86_64 ещё до упаковки.
+      - name: Диагностика — архитектуры нативных модулей
+        if: always()
+        run: |
+          set +e
+          : > modules-bootstrap.txt
+          for d in node_modules apm/node_modules apm/node_modules/atom-package-manager/node_modules script/node_modules out/app/node_modules; do
+            echo "=== $d ===" >> modules-bootstrap.txt
+            if [ -d "$d" ]; then
+              find "$d" -name '*.node' 2>/dev/null | sort | while IFS= read -r f; do
+                printf '%s %s\n' "$(lipo -archs "$f" 2>/dev/null || echo '?')" "$f" >> modules-bootstrap.txt
+              done
+            else
+              echo "(нет каталога)" >> modules-bootstrap.txt
+            fi
+          done
+          echo "итого .node в корневом node_modules: $(find node_modules -name '*.node' 2>/dev/null | wc -l | tr -d ' ')" >> modules-bootstrap.txt
+          wc -l modules-bootstrap.txt
+      # mksnapshot на arm64 падает с «Unable to open file "gen/v8/embedded.S"»:
+      # бинарник пишет вспомогательный файл относительно рабочего каталога,
+      # а обёртка electron-mksnapshot запускает его из временного каталога, где
+      # никакого gen/v8 нет. Проверяем сразу несколько вариантов запуска —
+      # из лога будет видно, какой из них рабочий.
       - name: Проверка mksnapshot
         run: |
           set +e
+          BIN_DIR=script/node_modules/electron-mksnapshot/bin
+          {
+            echo "=== содержимое $BIN_DIR ==="
+            find "$BIN_DIR" -maxdepth 3 2>/dev/null | sort | head -60
+            echo "=== флаги mksnapshot про embedded/startup ==="
+            MKS=$(find "$BIN_DIR" -maxdepth 1 -type f -name 'mksnapshot' | head -1)
+            if [ -n "$MKS" ]; then
+              "$MKS" --help 2>&1 | grep -i -E "embedded|startup" | head -12
+            else
+              echo "бинарь mksnapshot не найден"
+            fi
+          } > mksnapshot-test.log 2>&1
           echo 'var snapshotTest = 1;' > "$RUNNER_TEMP/snapshot-test.js"
-          mkdir -p "$RUNNER_TEMP/mks-out"
-          node script/node_modules/electron-mksnapshot/mksnapshot.js "$RUNNER_TEMP/snapshot-test.js" --output_dir "$RUNNER_TEMP/mks-out" > mksnapshot-test.log 2>&1
-          CODE=$?
-          echo "код возврата mksnapshot: $CODE" >> mksnapshot-test.log
-          ls -la "$RUNNER_TEMP/mks-out" >> mksnapshot-test.log 2>&1
-          if [ -f "$RUNNER_TEMP/mks-out/v8_context_snapshot.bin" ]; then
-            echo "::notice title=mksnapshot::снапшот создан (код $CODE): $(file -b "$RUNNER_TEMP/mks-out/v8_context_snapshot.bin")"
-          else
-            echo "::error title=mksnapshot::снапшот НЕ создан (код $CODE)"
-            tail -12 mksnapshot-test.log | tr -d '\r' | while IFS= read -r l; do
+          try_run() {
+            local label="$1"; shift
+            local dir="$RUNNER_TEMP/mks-out-$label"
+            rm -rf "$dir"; mkdir -p "$dir"
+            echo "=== попытка «$label» ===" >> mksnapshot-test.log
+            node script/node_modules/electron-mksnapshot/mksnapshot.js "$RUNNER_TEMP/snapshot-test.js" --output_dir "$dir" "$@" >> mksnapshot-test.log 2>&1
+            local code=$?
+            echo "код возврата «$label»: $code" >> mksnapshot-test.log
+            ls -la "$dir" >> mksnapshot-test.log 2>&1
+            return $code
+          }
+          try_run base; CODE_BASE=$?
+          try_run devnull --embedded_src=/dev/null; CODE_NULL=$?
+          try_run file --embedded_src="$RUNNER_TEMP/embedded.S"; CODE_FILE=$?
+          FOUND=""
+          for label in base devnull file; do
+            f="$RUNNER_TEMP/mks-out-$label/v8_context_snapshot.bin"
+            if [ -f "$f" ]; then
+              echo "::notice title=mksnapshot::снапшот создан вариантом «$label»: $(file -b "$f")"
+              FOUND="$label"
+            fi
+          done
+          if [ -z "$FOUND" ]; then
+            echo "::error title=mksnapshot::снапшот НЕ создан ни одним способом (коды: $CODE_BASE/$CODE_NULL/$CODE_FILE)"
+            grep -a -E "Unable|Error|error|Loading" mksnapshot-test.log | tail -14 | tr -d '\r' | while IFS= read -r l; do
               echo "::error title=mksnapshot::$l"
             done
           fi
+
 
       - name: Сборка приложения под arm64
         id: build
@@ -526,20 +631,6 @@ jobs:
       # Аннотации ограничены по количеству и приходят в произвольном порядке,
       # а логи job'ов недоступны извне. Поэтому при падении сохраняем логи
       # прямо в репозиторий — с пометкой [skip ci], чтобы не гонять сборку снова.
-      - name: Логи для разбора — в репозиторий
-        if: failure()
-        continue-on-error: true
-        run: |
-          git config user.name "Arena Agent"
-          git config user.email "agent@arena.ai"
-          mkdir -p .ci-logs
-          for f in build.log bootstrap.log rg.log mksnapshot-test.log; do
-            if [ -f "$f" ]; then cp "$f" ".ci-logs/$f"; fi
-          done
-          ls -la out/ > .ci-logs/out-listing.txt 2>&1 || true
-          git add -f .ci-logs
-          git commit -qm "ci: логи прогона ${{ github.run_id }} [skip ci]"
-          git push -q origin HEAD:${{ github.ref_name }}
 
       - name: Проверка — архитектура и размер
         if: success()
@@ -574,13 +665,20 @@ jobs:
         run: |
           APP=$(ls -d out/*.app 2>/dev/null | head -1)
           BAD=$(mktemp)
+          : > modules-app.txt
           find "$APP" -name '*.node' | sort | while IFS= read -r f; do
+            REL="${f#$APP/}"
             A=$(lipo -archs "$f" 2>/dev/null || echo '?')
-            echo "::notice title=модуль::$(echo "$f" | sed "s|.*/node_modules/||") → $A"
+            echo "$A $REL" >> modules-app.txt
+            if [ "$A" = "?" ]; then
+              echo "::notice title=модуль::не Mach-O, пропущено: $REL"
+              continue
+            fi
+            echo "::notice title=модуль::$REL → $A"
             case "$A" in
               *arm64*) ;;
               *) echo "нет" >> "$BAD"
-                 echo "::error title=битый модуль::$(basename "$f") собран не под arm64: $A" ;;
+                 echo "::error title=битый модуль::$REL собран не под arm64: $A" ;;
             esac
           done
           RG=$(find "$APP" -type f -name rg | head -1)
@@ -600,6 +698,22 @@ jobs:
             exit 1
           fi
           echo "::notice title=итог::все нативные модули и ripgrep собраны под arm64"
+
+
+      - name: Логи для разбора — в репозиторий
+        if: failure()
+        continue-on-error: true
+        run: |
+          git config user.name "Arena Agent"
+          git config user.email "agent@arena.ai"
+          mkdir -p .ci-logs
+          for f in build.log bootstrap.log rg.log mksnapshot-test.log modules-bootstrap.txt modules-app.txt; do
+            if [ -f "$f" ]; then cp "$f" ".ci-logs/$f"; fi
+          done
+          ls -la out/ > .ci-logs/out-listing.txt 2>&1 || true
+          git add -f .ci-logs
+          git commit -qm "ci: логи прогона ${{ github.run_id }} [skip ci]"
+          git push -q origin HEAD:${{ github.ref_name }}
 
       - name: Загрузить артефакт
         if: success()

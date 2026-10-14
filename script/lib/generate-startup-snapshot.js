@@ -305,31 +305,55 @@ module.exports = function(packagedAppPath) {
     // никто не читает. Сборка при этом молча шла дальше и падала позже, уже на
     // переименовании файла, с невнятным «ENOENT: rename v8_context_snapshot.bin».
     // Теперь вывод печатается, а результат проверяется.
-    const mksnapshotRun = childProcess.spawnSync(
-      process.execPath,
-      [
-        path.join(
-          CONFIG.repositoryRootPath,
-          'script',
-          'node_modules',
-          'electron-mksnapshot',
-          'mksnapshot.js'
-        ),
-        snapshotScriptPath,
-        '--output_dir',
-        CONFIG.buildOutputPath
-      ],
-      { encoding: 'utf8' }
+    const mksnapshotScriptPath = path.join(
+      CONFIG.repositoryRootPath,
+      'script',
+      'node_modules',
+      'electron-mksnapshot',
+      'mksnapshot.js'
     );
-    if (mksnapshotRun.stdout) process.stdout.write(mksnapshotRun.stdout);
-    if (mksnapshotRun.stderr) process.stderr.write(mksnapshotRun.stderr);
-    if (mksnapshotRun.error) {
-      console.error(`mksnapshot не удалось запустить: ${mksnapshotRun.error.message}`);
-    } else if (mksnapshotRun.status !== 0) {
-      console.error(
-        `mksnapshot завершился с кодом ${mksnapshotRun.status}` +
-          (mksnapshotRun.signal ? ` (сигнал ${mksnapshotRun.signal})` : '')
+    const producedSnapshotPath = path.join(
+      CONFIG.buildOutputPath,
+      'v8_context_snapshot.bin'
+    );
+    const runMksnapshot = extraArgs => {
+      const result = childProcess.spawnSync(
+        process.execPath,
+        [
+          mksnapshotScriptPath,
+          snapshotScriptPath,
+          '--output_dir',
+          CONFIG.buildOutputPath
+        ].concat(extraArgs),
+        { encoding: 'utf8' }
       );
+      if (result.stdout) process.stdout.write(result.stdout);
+      if (result.stderr) process.stderr.write(result.stderr);
+      if (result.error) {
+        console.error(`mksnapshot не удалось запустить: ${result.error.message}`);
+      } else if (result.status !== 0) {
+        console.error(
+          `mksnapshot завершился с кодом ${result.status}` +
+            (result.signal ? ` (сигнал ${result.signal})` : '')
+        );
+      }
+      return result;
+    };
+
+    runMksnapshot([]);
+    if (!fs.existsSync(producedSnapshotPath)) {
+      // ATOM LITE: запасной вариант. Бинарник mksnapshot пишет ещё и
+      // вспомогательный файл gen/v8/embedded.S относительно своего рабочего
+      // каталога — обёртка electron-mksnapshot запускает его из временного
+      // каталога, и если каталога gen/v8 там нет, mksnapshot падает, не создав
+      // снапшот вовсе. Пустой gen/v8 рядом с бинарником заранее готовит
+      // script/lib/install-script-dependencies.js; здесь — второй шанс:
+      // перенаправляем вспомогательный файл в никуда.
+      const embeddedSrc = process.platform === 'win32' ? 'NUL' : '/dev/null';
+      console.error(
+        `Снапшот не создан — пробую mksnapshot повторно с --embedded_src=${embeddedSrc}`
+      );
+      runMksnapshot([`--embedded_src=${embeddedSrc}`]);
     }
 
     let startupBlobDestinationPath;
