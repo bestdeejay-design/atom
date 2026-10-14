@@ -364,16 +364,25 @@ jobs:
           report "ВСЁ ПРИЛОЖЕНИЕ (распакованное)" "$(size "$APP")"
           report "Electron Framework (Chromium + V8)" "$(size "$APP/Contents/Frameworks/Electron Framework.framework")"
           report "Contents/Frameworks, всего" "$(size "$APP/Contents/Frameworks")"
-          report "Resources/app.asar — код редактора и node_modules" "$(size "$APP/Contents/Resources/app.asar")"
-          report "Resources/app.asar.unpacked — нативные модули" "$(size "$APP/Contents/Resources/app.asar.unpacked")"
-          report "Resources/app — то, что вне app.asar (apm больше не копируется)" "$(size "$APP/Contents/Resources/app")"
-          report "Ресурсы Electron без app.asar (иконки, .lproj)" "$(size "$APP/Contents/Resources")"
+          report "Contents/Resources, всего" "$(size "$APP/Contents/Resources")"
+          report "  из них app.asar — код редактора и node_modules" "$(size "$APP/Contents/Resources/app.asar")"
+          report "  из них app.asar.unpacked — нативные модули" "$(size "$APP/Contents/Resources/app.asar.unpacked")"
+          report "  из них app — то, что вне asar (apm больше не копируется)" "$(size "$APP/Contents/Resources/app")"
           report "архив out/atom-mac.zip (то, что качается)" "$(size out/atom-mac.zip)"
-          echo "--- что внутри Resources/app (вне asar) ---" >> weight.txt
-          du -sk "$APP"/Contents/Resources/app/* 2>/dev/null | sort -rn >> weight.txt || true
-          echo "--- переводы интерфейса (*.lproj) ---" >> weight.txt
-          du -csk "$APP"/Contents/Resources/*.lproj 2>/dev/null | tail -1 >> weight.txt || true
-          du -sk "$APP"/Contents/Resources/*.lproj 2>/dev/null | sort -rn | head -10 >> weight.txt || true
+
+          echo "--- верхний уровень Contents/Resources ---" >> weight.txt
+          du -sk "$APP"/Contents/Resources/* 2>/dev/null | sort -rn | head -15 >> weight.txt || true
+
+          echo "--- что попадёт в app.asar: out/app, верхний уровень ---" >> weight.txt
+          du -sk out/app/* 2>/dev/null | sort -rn | head -15 >> weight.txt || true
+
+          echo "--- out/app/node_modules, топ-40 ---" >> weight.txt
+          du -sk out/app/node_modules/* 2>/dev/null | sort -rn | head -40 >> weight.txt || true
+
+          echo "--- out/app, сумма по расширениям (что занимает место) ---" >> weight.txt
+          find out/app -name '*.map' -o -name '*.md' 2>/dev/null | wc -l >> weight.txt || true
+          echo "файлов .map и .md: (число выше)" >> weight.txt
+          du -csh out/app/node_modules/*/test* out/app/node_modules/*/spec* 2>/dev/null | tail -1 >> weight.txt || true
 
       - name: Проверка — всё ли действительно arm64
         if: success()
