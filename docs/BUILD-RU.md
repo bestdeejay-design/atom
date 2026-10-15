@@ -16,19 +16,33 @@
    **Actions** → **Сборка Atom Lite** → **Run workflow**
 2. Дождись окончания (первый прогон — 30–60 минут)
 3. Открой завершённый прогон и скачай артефакт внизу страницы:
-   - `atom-macos-x64` → `atom-mac-x64.zip` — для Intel Mac
-   - `atom-macos-arm64` → `atom-mac-arm64.zip` — для Apple Silicon
+   - `atom-macos-arm64` — готовая сборка для Apple Silicon (внутри архива GitHub лежит `atom-mac-arm64.zip`, а в нём — `Atom Dev.app`)
+   - `atom-macos-report` — текстовый отчёт о весах и модулях
 
 ### Установка скачанного
 
+Браузер (Safari) при скачивании с GitHub может сам распаковать внешний архив
+`atom-macos-arm64.zip`, оставив `atom-mac-arm64.zip` в `~/Downloads`. Если не
+распаковал — распакуй сначала внешний, затем внутренний:
+
 ```bash
-unzip atom-mac-arm64.zip -d /Applications
-xattr -dr com.apple.quarantine /Applications/Atom.app   # снять карантин
-open /Applications/Atom.app
+cd ~/Downloads
+# если скачался внешний архив GitHub:
+unzip -q atom-macos-arm64.zip
+
+# распаковать само приложение в /Applications:
+unzip -q atom-mac-arm64.zip -d /Applications
+
+# снять карантин macOS (сборка не подписана сертификатом Apple Developer):
+xattr -dr com.apple.quarantine "/Applications/Atom Dev.app"
+
+# запустить:
+open "/Applications/Atom Dev.app"
 ```
 
-Локально собранный и скачанный из CI архив помечен карантином, потому что
-не подписан сертификатом Apple. `xattr` это снимает.
+> 💡 Почему `Atom Dev.app`, а не `Atom.app`? В `package.json` стоит версия
+> `1.61.0-dev`, и упаковщик по суффиксу `-dev` даёт приложению имя `Atom Dev`.
+> При желании бандл можно переименовать в `/Applications/Atom.app`.
 
 > ⚠️ Сборка **не подписана**. Для личного использования это нормально.
 > Если захочешь подписать — нужен сертификат Apple Developer, и тогда
@@ -266,8 +280,9 @@ script/build --compress-artifacts   # собрать + сделать zip
 script/build --install /Applications  # собрать + сразу установить
 script/build --existing-binaries    # пересобрать без повторной транспиляции
 script/lint                         # проверить стиль кода
-script/test                         # прогнать тесты
 node script/check-themes.js         # проверить темы (LESS и договор переменных)
+node script/preview-themes.js       # собрать theme-preview.html для просмотра тем в браузере
+node script/prune-lock-orphans.js   # проверить (или с --write почистить) осиротевшие записи замка
 ```
 
 ---
