@@ -131,6 +131,7 @@ packages/dajet-syntax/
 
 ```bash
 node script/check-themes.js      # нужен script/bootstrap (он ставит less)
+node script/preview-themes.js    # собрать theme-preview.html и открыть в браузере
 ```
 
 Инструмент `script/check-themes.js` проверяет четыре вещи:
@@ -173,6 +174,21 @@ node script/check-themes.js      # нужен script/bootstrap (он стави�
 
 Всё чисто.
 ```
+
+### Посмотреть глазами
+
+```bash
+node script/preview-themes.js
+```
+
+Собирает `theme-preview.html` (в репозиторий не попадает — он в `.gitignore`):
+макет окна Atom с настоящими именами классов (`atom-workspace`, `.pane-item`,
+`.tab-bar`, `.tree-view`, `.status-bar`, `atom-text-editor`) и теми же
+собранными файлами тем. Переключатели на странице ставят на `<html>` те же
+атрибуты, что и `lib/main.js` тем, поэтому видно и работу переключения:
+облик `dajet` (как в системе / тёмный / светлый), пять атмосфер `joer`,
+подсветка окна вкл/выкл. Это **макет**, а не снимок редактора: шрифты и
+мелочи вёрстки могут отличаться.
 
 ---
 

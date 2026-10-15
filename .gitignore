@@ -20,3 +20,6 @@ spec/fixtures/evil-files/
 out/
 /electron/
 .ci-logs/
+
+# Просмотр тем: собирается script/preview-themes.js
+theme-preview.html
