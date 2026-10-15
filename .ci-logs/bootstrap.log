@@ -224,12 +224,15 @@ Installing apm
 ../deps/libgit2/deps/zlib/inffast.c:50:20: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
    50 | void ZLIB_INTERNAL inflate_fast(strm, start)
       |                    ^
-28 warnings generated.
 1 warning generated.
+28 warnings generated.
 4 warnings generated.
-../deps/libgit2/deps/zlib/inflate.c:105:11: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
-  105 | local int inflateStateCheck(strm)
+../deps/libgit2/deps/zlib/inftrees.c:32:19: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
+   32 | int ZLIB_INTERNAL inflate_table(type, lens, codes, ta../deps/libgit2/deps/zlib/inflate.c:b105l:11: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
+e  105 | local int inflateStateCheck(strm),
       |           ^
+ bits, work)
+      |                   ^
 ../deps/libgit2/deps/zlib/inflate.c:119:13: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   119 | int ZEXPORT inflateResetKeep(strm)
       |             ^
@@ -293,9 +296,6 @@ Installing apm
 ../deps/libgit2/deps/zlib/inflate.c:1554:23: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
  1554 | unsigned long ZEXPORT inflateCodesUsed(strm)
       |                       ^
-../deps/libgit2/deps/zlib/inftrees.c:32:19: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
-   32 | int ZLIB_INTERNAL inflate_table(type, lens, codes, table, bits, work)
-      |                   ^
 ../deps/libgit2/deps/zlib/trees.c:379:20: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   379 | void ZLIB_INTERNAL _tr_init(s)
       |                    ^
@@ -1036,8 +1036,8 @@ cated-non-prototype]
 ../deps/libgit2/deps/zlib/inffast.c:50:20: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
    50 | void ZLIB_INTERNAL inflate_fast(strm, start)
       |                    ^
-1 warning generated.
 28 warnings generated.
+1 warning generated.
 4 warnings generated.
 ../deps/libgit2/deps/zlib/inflate.c:105:11: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   105 | local int inflateStateCheck(strm)
@@ -1069,6 +1069,9 @@ cated-non-prototype]
 ../deps/libgit2/deps/zlib/inflate.c:622:13: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   622 | int ZEXPORT inflate(strm, flush)
       |             ^
+../deps/libgit2/deps/zlib/inftrees.c:32:19: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
+   32 | int ZLIB_INTERNAL inflate_table(type, lens, codes, table, bits, work)
+      |                   ^
 ../deps/libgit2/deps/zlib/inflate.c:1277:13: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
  1277 | int ZEXPORT inflateEnd(strm)
       |             ^
@@ -1105,9 +1108,6 @@ cated-non-prototype]
 ../deps/libgit2/deps/zlib/inflate.c:1554:23: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
  1554 | unsigned long ZEXPORT inflateCodesUsed(strm)
       |                       ^
-../deps/libgit2/deps/zlib/inftrees.c:32:19: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
-   32 | int ZLIB_INTERNAL inflate_table(type, lens, codes, table, bits, work)
-      |                   ^
 ../deps/libgit2/deps/zlib/trees.c:379:20: warning: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Wdeprecated-non-prototype]
   379 | void ZLIB_INTERNAL _tr_init(s)
       |                    ^

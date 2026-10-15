@@ -31,23 +31,23 @@ script/node_modules/electron-mksnapshot/bin/mksnapshot_args
 Loading script for embedding: /Users/runner/work/_temp/snapshot-test.js
 код возврата «�: 0
 total 448
-drwxr-xr-x   4 runner  staff     128 Oct 14 23:54 .
-drwxr-xr-x  18 runner  staff     576 Oct 14 23:54 ..
--rw-r--r--   1 runner  staff   51384 Oct 14 23:54 snapshot_blob.bin
--rw-r--r--   1 runner  staff  172178 Oct 14 23:54 v8_context_snapshot.bin
+drwxr-xr-x   4 runner  staff     128 Oct 15 00:33 .
+drwxr-xr-x  18 runner  staff     576 Oct 15 00:32 ..
+-rw-r--r--   1 runner  staff   51384 Oct 15 00:33 snapshot_blob.bin
+-rw-r--r--   1 runner  staff  172178 Oct 15 00:33 v8_context_snapshot.bin
 === попытка «� ===
 Loading script for embedding: /Users/runner/work/_temp/snapshot-test.js
 код возврата «�: 0
 total 448
-drwxr-xr-x   4 runner  staff     128 Oct 14 23:54 .
-drwxr-xr-x  19 runner  staff     608 Oct 14 23:54 ..
--rw-r--r--   1 runner  staff   51384 Oct 14 23:54 snapshot_blob.bin
--rw-r--r--   1 runner  staff  172178 Oct 14 23:54 v8_context_snapshot.bin
+drwxr-xr-x   4 runner  staff     128 Oct 15 00:33 .
+drwxr-xr-x  19 runner  staff     608 Oct 15 00:33 ..
+-rw-r--r--   1 runner  staff   51384 Oct 15 00:33 snapshot_blob.bin
+-rw-r--r--   1 runner  staff  172178 Oct 15 00:33 v8_context_snapshot.bin
 === попытка «� ===
 Loading script for embedding: /Users/runner/work/_temp/snapshot-test.js
 код возврата «�: 0
 total 448
-drwxr-xr-x   4 runner  staff     128 Oct 14 23:55 .
-drwxr-xr-x  20 runner  staff     640 Oct 14 23:54 ..
--rw-r--r--   1 runner  staff   51384 Oct 14 23:54 snapshot_blob.bin
--rw-r--r--   1 runner  staff  172178 Oct 14 23:55 v8_context_snapshot.bin
+drwxr-xr-x   4 runner  staff     128 Oct 15 00:33 .
+drwxr-xr-x  20 runner  staff     640 Oct 15 00:33 ..
+-rw-r--r--   1 runner  staff   51384 Oct 15 00:33 snapshot_blob.bin
+-rw-r--r--   1 runner  staff  172178 Oct 15 00:33 v8_context_snapshot.bin
