@@ -394,6 +394,11 @@ jobs:
           echo "--- out/app/node_modules, топ-40 ---" >> weight.txt
           du -sk out/app/node_modules/* 2>/dev/null | sort -rn | head -40 >> weight.txt || true
 
+          # Полный список пакетов приложения: топ-40 обрезает хвост, а для
+          # решения «что снять дальше» нужен весь список. Файл маленький.
+          echo "--- out/app/node_modules, все пакеты (КБ) ---" >> weight.txt
+          du -sk out/app/node_modules/* 2>/dev/null | sort -rn >> weight.txt || true
+
           echo "--- out/app, сумма по расширениям (что занимает место) ---" >> weight.txt
           find out/app -name '*.map' -o -name '*.md' 2>/dev/null | wc -l >> weight.txt || true
           echo "файлов .map и .md: (число выше)" >> weight.txt
