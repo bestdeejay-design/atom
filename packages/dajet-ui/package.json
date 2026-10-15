@@ -1,0 +1,46 @@
+{
+  "name": "dajet-ui",
+  "theme": "ui",
+  "version": "1.0.0",
+  "description": "Тема интерфейса «dajet»: тёплое светлое стекло и матовый почти-чёрный, терракота как единственный акцент",
+  "keywords": [
+    "dajet",
+    "light",
+    "dark",
+    "adaptive",
+    "ui"
+  ],
+  "license": "MIT",
+  "main": "lib/main",
+  "engines": {
+    "atom": ">0.40.0"
+  },
+  "configSchema": {
+    "look": {
+      "title": "Облик",
+      "description": "system — следовать за системой; dark — матовый почти-чёрный; light — светлое стекло.",
+      "type": "string",
+      "default": "system",
+      "enum": [
+        "system",
+        "dark",
+        "light"
+      ],
+      "order": 1
+    },
+    "fontSize": {
+      "title": "Размер шрифта интерфейса",
+      "type": "integer",
+      "default": 13,
+      "enum": [
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "order": 2
+    }
+  }
+}

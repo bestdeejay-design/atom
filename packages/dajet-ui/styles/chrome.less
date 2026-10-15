@@ -1,0 +1,433 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Окно «dajet»: из чего оно складывается.
+//
+// Правила собраны из двух источников:
+//   · Metrics и Palette плеера серии (строки 26, скругления 8 и 12, колонка 232,
+//     терракота как единственный акцент);
+//   · привычек самого Atom — какие классы за что отвечают.
+//
+// Всё цветное — через var(--dajet-*): иначе облик не сменился бы на ходу.
+// Правила начинаются с .theme-dajet-ui — этот класс Atom вешает на рабочую
+// область, когда тема активна. Не ради красоты: у чужих пакетов (дерево
+// файлов, настройки, поиск) свои правила на те же классы, и лишний селектор
+// решает, чьё правило победит.
+//
+// Движение — одно: 120 мс на наведение и выбор. При «Reduce Motion» оно
+// выключается, как и в плеере серии.
+// ─────────────────────────────────────────────────────────────────────────────
+
+.dajet-move() {
+  transition: color 120ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    background-color 120ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    border-color 120ms cubic-bezier(0.22, 0.61, 0.36, 1),
+    box-shadow 120ms cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+// Окно -----------------------------------------------------------------------
+
+atom-workspace.theme-dajet-ui {
+  background-color: var(--dajet-ground);
+  color: var(--dajet-ink);
+  font-family: @font-family;
+  font-size: 13px;
+}
+
+.theme-dajet-ui .atom-workspace-axis,
+.theme-dajet-ui .pane,
+.theme-dajet-ui .pane-item,
+.theme-dajet-ui .item-views {
+  background-color: var(--dajet-base);
+}
+
+.theme-dajet-ui .pane .item-views .pane-item.border-top,
+.theme-dajet-ui .pane .item-views .pane-item.border-bottom {
+  border-color: var(--dajet-hairline);
+}
+
+// Полосы и панели ------------------------------------------------------------
+
+.theme-dajet-ui atom-panel,
+.theme-dajet-ui .tool-panel,
+.theme-dajet-ui .atom-dock-mask {
+  background-color: var(--dajet-panel);
+  border-color: var(--dajet-hairline);
+}
+
+.theme-dajet-ui atom-panel.modal,
+.theme-dajet-ui atom-panel .atom-panel-container {
+  background-color: var(--dajet-overlay);
+}
+
+.theme-dajet-ui .atom-dock-toggle-button .atom-dock-toggle-button-inner {
+  background-color: var(--dajet-panel);
+  border: 1px solid var(--dajet-hairline);
+  color: var(--dajet-muted);
+  border-radius: 8px;
+}
+
+// Вкладки --------------------------------------------------------------------
+
+.theme-dajet-ui .tab-bar {
+  background-color: var(--dajet-panel);
+  background-image: linear-gradient(
+    180deg,
+    var(--dajet-sheen),
+    transparent 10px
+  );
+  box-shadow: inset 0 -1px 0 var(--dajet-hairline);
+}
+
+.theme-dajet-ui .tab-bar .tab {
+  background-color: transparent;
+  border-left: 1px solid var(--dajet-hairline);
+  color: var(--dajet-muted);
+  font-size: 13px;
+  .dajet-move();
+
+  &:hover {
+    background-color: var(--dajet-hover);
+    color: var(--dajet-ink);
+  }
+
+  // Текущая вкладка — то же место, что «текущая строка» в плеере: её метит
+  // терракота, но метит тонко: линия по верхнему краю и свет поверхности.
+  &.active {
+    background-color: var(--dajet-base);
+    color: var(--dajet-ink-strong);
+    box-shadow: inset 0 2px 0 var(--dajet-accent);
+
+    &:hover {
+      background-color: var(--dajet-base);
+    }
+  }
+
+  &.modified .close-icon {
+    color: var(--dajet-accent);
+    opacity: 1;
+  }
+
+  .close-icon {
+    color: var(--dajet-faint);
+    .dajet-move();
+
+    &:hover {
+      color: var(--dajet-ink-strong);
+    }
+  }
+}
+
+// Дерево файлов --------------------------------------------------------------
+
+.theme-dajet-ui .tree-view {
+  background-color: var(--dajet-side);
+  color: var(--dajet-ink);
+  font-size: 13px;
+
+  .project-root > .header .name {
+    color: var(--dajet-muted);
+    font-weight: 600;
+  }
+
+  .entry {
+    line-height: 26px; // Metrics.row
+    .dajet-move();
+
+    .name {
+      color: var(--dajet-ink);
+    }
+
+    &:hover {
+      background-color: var(--dajet-hover);
+    }
+
+    // Скрытые файлы и служебные имена — тише, но не исчезают.
+    &.status-ignored .name,
+    &.status-ignored .header .name {
+      color: var(--dajet-faint);
+    }
+
+    &.status-modified .name {
+      color: var(--dajet-warning);
+    }
+  }
+
+  .selected:before {
+    background-color: var(--dajet-wash);
+    border-radius: 6px;
+  }
+
+  &:focus {
+    .selected.list-item > .name,
+    .selected.list-nested-item > .list-item > .name,
+    .selected.list-nested-item > .header .name {
+      color: var(--dajet-ink-strong);
+    }
+  }
+}
+
+.theme-dajet-ui .tree-view-resizer .tree-view-resize-handle {
+  width: 8px;
+}
+
+// Строка состояния -----------------------------------------------------------
+
+.theme-dajet-ui .status-bar {
+  background-color: var(--dajet-panel);
+  color: var(--dajet-muted);
+  box-shadow: inset 0 1px 0 var(--dajet-hairline);
+  font-size: 12px;
+
+  a,
+  .status-bar-item {
+    color: var(--dajet-muted);
+    .dajet-move();
+  }
+
+  a:hover,
+  .status-bar-item:hover {
+    color: var(--dajet-ink);
+  }
+}
+
+// Списки, кнопки, поля -------------------------------------------------------
+
+.theme-dajet-ui .list-group {
+  background-color: transparent;
+
+  li {
+    border-color: var(--dajet-hairline);
+    color: var(--dajet-ink);
+    .dajet-move();
+  }
+
+  li.selected,
+  .selected {
+    background-color: var(--dajet-wash);
+    color: var(--dajet-ink-strong);
+  }
+}
+
+.theme-dajet-ui .btn {
+  background-color: var(--dajet-button);
+  background-image: none;
+  border: 1px solid var(--dajet-hairline);
+  border-radius: 8px; // Metrics.corner
+  color: var(--dajet-ink);
+  box-shadow: none;
+  text-shadow: none;
+  .dajet-move();
+
+  &:hover,
+  &:focus {
+    background-color: var(--dajet-button-hover);
+    color: var(--dajet-ink-strong);
+  }
+
+  &:active,
+  &.selected {
+    background-color: var(--dajet-accent);
+    border-color: transparent;
+    color: var(--dajet-on-accent);
+  }
+
+  &.btn-primary {
+    background-color: var(--dajet-accent);
+    border-color: transparent;
+    color: var(--dajet-on-accent);
+
+    &:hover {
+      background-color: var(--dajet-accent);
+      opacity: 0.9;
+      color: var(--dajet-on-accent);
+    }
+  }
+
+  &.btn-error {
+    background-color: var(--dajet-error);
+    border-color: transparent;
+    color: var(--dajet-on-accent);
+  }
+}
+
+.theme-dajet-ui atom-text-editor[mini],
+.theme-dajet-ui input[type="text"],
+.theme-dajet-ui input[type="search"],
+.theme-dajet-ui select {
+  background-color: var(--dajet-inset);
+  border: 1px solid var(--dajet-hairline);
+  border-radius: 8px;
+  color: var(--dajet-ink);
+  box-shadow: none;
+}
+
+.theme-dajet-ui atom-text-editor[mini].is-focused,
+.theme-dajet-ui input:focus {
+  border-color: var(--dajet-accent);
+  box-shadow: none;
+}
+
+.theme-dajet-ui .select-list {
+  background-color: var(--dajet-overlay);
+
+  ol.list-group {
+    background-color: var(--dajet-overlay);
+
+    li {
+      color: var(--dajet-muted);
+      .dajet-move();
+
+      &.selected {
+        background-color: var(--dajet-wash);
+        color: var(--dajet-ink-strong);
+      }
+
+      .primary-line {
+        color: inherit;
+      }
+
+      .secondary-line {
+        color: var(--dajet-faint);
+      }
+    }
+  }
+
+  .error-message,
+  .loading-message {
+    color: var(--dajet-muted);
+  }
+}
+
+// Настройки: сюда заходят, чтобы выбрать тему, — значит, и они должны быть
+// в серии, а не «примерно тёмными».
+
+.theme-dajet-ui .settings-view {
+  background-color: var(--dajet-ground);
+  color: var(--dajet-ink);
+
+  .panels .panel {
+    background-color: var(--dajet-base);
+    border: 1px solid var(--dajet-hairline);
+    border-radius: 12px; // Metrics.panel
+    box-shadow: none;
+
+    .panel-heading {
+      background-color: var(--dajet-panel);
+      border-radius: 12px 12px 0 0;
+      color: var(--dajet-ink);
+    }
+  }
+
+  .section .section-heading,
+  .sub-section .sub-section-heading {
+    color: var(--dajet-ink);
+  }
+
+  .section .section-container,
+  .setting-description,
+  .package-card .package-description {
+    color: var(--dajet-muted);
+  }
+
+  .theme-card {
+    background-color: var(--dajet-inset);
+    border: 1px solid var(--dajet-hairline);
+    border-radius: 12px;
+    box-shadow: none;
+
+    .theme-name {
+      color: var(--dajet-ink);
+    }
+
+    &.active {
+      border-color: var(--dajet-accent);
+    }
+  }
+
+  .package-card {
+    background-color: var(--dajet-base);
+    border: 1px solid var(--dajet-hairline);
+    border-radius: 12px;
+  }
+
+  .setting-title,
+  .control-group .setting-title {
+    color: var(--dajet-ink);
+  }
+}
+
+// Сообщения, подсказки, затемнения -------------------------------------------
+
+.theme-dajet-ui .notifications .notification,
+.theme-dajet-ui .notification {
+  background-color: var(--dajet-overlay);
+  border: 1px solid var(--dajet-hairline);
+  border-radius: 12px;
+  box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.45);
+  color: var(--dajet-ink);
+
+  .message {
+    color: var(--dajet-ink);
+  }
+
+  &.error {
+    border-color: var(--dajet-error);
+  }
+
+  &.warning {
+    border-color: var(--dajet-warning);
+  }
+
+  &.success {
+    border-color: var(--dajet-success);
+  }
+
+  &.info {
+    border-color: var(--dajet-info);
+  }
+}
+
+.theme-dajet-ui .tooltip .tooltip-inner,
+html[data-dajet-look] .tooltip .tooltip-inner {
+  background-color: var(--dajet-overlay);
+  border: 1px solid var(--dajet-hairline);
+  border-radius: 8px;
+  color: var(--dajet-ink);
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.5);
+  padding: 6px 10px;
+}
+
+.theme-dajet-ui .background-message .message,
+.theme-dajet-ui .background-message {
+  color: var(--dajet-faint);
+}
+
+// Полосы прокрутки: тонкие, без стрелок, тише поверхности --------------------
+
+.theme-dajet-ui ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.theme-dajet-ui ::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+.theme-dajet-ui ::-webkit-scrollbar-thumb {
+  background-color: var(--dajet-scrollbar);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 999px;
+}
+
+.theme-dajet-ui ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--dajet-accent);
+  background-clip: padding-box;
+}
+
+.theme-dajet-ui ::-webkit-scrollbar-corner {
+  background-color: transparent;
+}

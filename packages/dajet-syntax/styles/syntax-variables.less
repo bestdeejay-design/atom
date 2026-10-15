@@ -1,0 +1,57 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Договор темы с остальными пакетами Atom.
+//
+// Здесь обязаны быть настоящие цвета, а не переменные CSS: чужие стили
+// (например, панель git-diff) считают из них оттенки — fade(@syntax-color-
+// added, 20%) и подобное, а LESS арифметику над var() не умеет.
+//
+// Значения — тёмный облик. Светлый тема красит сама, в looks.less.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Общее ----------------------------------------------------------------------
+
+@syntax-text-color: #f4f1e8;
+@syntax-cursor-color: #e8ae8c;
+@syntax-selection-color: rgba(232, 174, 140, 0.19);
+@syntax-selection-flash-color: #e8ae8c;
+@syntax-background-color: #0c0d10;
+
+// Направляющие ---------------------------------------------------------------
+
+@syntax-wrap-guide-color: rgba(255, 255, 255, 0.07);
+@syntax-indent-guide-color: rgba(255, 255, 255, 0.07);
+@syntax-invisible-character-color: rgba(255, 255, 255, 0.15);
+
+// Поиск ----------------------------------------------------------------------
+
+@syntax-result-marker-color: rgba(232, 174, 140, 0.24);
+@syntax-result-marker-color-selected: #e8ae8c;
+
+// Номера строк ---------------------------------------------------------------
+
+@syntax-gutter-text-color: #73736f;
+@syntax-gutter-text-color-selected: #f4f1e8;
+@syntax-gutter-background-color: #0c0d10;
+@syntax-gutter-background-color-selected: rgba(255, 255, 255, 0.03);
+
+// Смысловые цвета (их считают чужие пакеты, например панель git-diff) --------
+
+@syntax-color-renamed: #9fb6c9;
+@syntax-color-added: #a3bd96;
+@syntax-color-modified: #dfb478;
+@syntax-color-removed: #d0836f;
+
+// Цвета сущностей ------------------------------------------------------------
+
+@syntax-color-variable: #f4f1e8;
+@syntax-color-constant: #d9a05b;
+@syntax-color-property: #dcc9a8;
+@syntax-color-value: #a9b58a;
+@syntax-color-function: #9fb6c9;
+@syntax-color-method: @syntax-color-function;
+@syntax-color-class: #dcc9a8;
+@syntax-color-keyword: #e8ae8c;
+@syntax-color-tag: #e8ae8c;
+@syntax-color-attribute: #c9c4b6;
+@syntax-color-import: #dcc9a8;
+@syntax-color-snippet: #a9b58a;

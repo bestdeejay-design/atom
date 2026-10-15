@@ -1,0 +1,16 @@
+{
+  "name": "joer-syntax",
+  "theme": "syntax",
+  "version": "1.0.0",
+  "description": "Тема подсветки «joer»: цвет атмосферы отмечает ключевое, остальное читается как текст",
+  "keywords": [
+    "joer",
+    "dark",
+    "atmosphere",
+    "syntax"
+  ],
+  "license": "MIT",
+  "engines": {
+    "atom": ">0.50.0"
+  }
+}

@@ -18,8 +18,34 @@ const homeDirPath = process.env.HOME || process.env.USERPROFILE;
 const atomHomeDirPath =
   process.env.ATOM_HOME || path.join(homeDirPath, '.atom');
 
+// ATOM LITE: целевая архитектура сборки.
+//
+// Оригинальный Atom собирал версию для macOS строго под x64: в
+// `script/lib/package-application.js` архитектура была прописана константой
+// с комментарием «OS X is 64-bit only» — это писалось до Apple Silicon.
+// На M-чипе получался интеловский бинарник, работавший только через Rosetta.
+//
+// Теперь:
+//   · по умолчанию берётся архитектура машины сборки (process.arch);
+//   · её можно переопределить переменной окружения — стандартной
+//     `npm_config_arch` (её понимают npm и electron-packager), `ATOM_ARCH`
+//     (то же имя использует apm) либо `ATOM_TARGET_ARCH`.
+//
+// Примеры:
+//   npm_config_arch=arm64 script/build   # нативная сборка под Apple Silicon
+//   npm_config_arch=x64   script/build   # сборка под Intel
+function computeTargetArch() {
+  const requested =
+    process.env.npm_config_arch ||
+    process.env.ATOM_ARCH ||
+    process.env.ATOM_TARGET_ARCH;
+  if (requested) return requested;
+  return process.arch;
+}
+
 const appMetadata = require(path.join(repositoryRootPath, 'package.json'));
 const apmMetadata = require(path.join(apmRootPath, 'package.json'));
+const targetArch = computeTargetArch();
 const computedAppVersion = computeAppVersion(
   process.env.ATOM_RELEASE_VERSION || appMetadata.version
 );
@@ -42,6 +68,7 @@ module.exports = {
   appName,
   executableName,
   computedAppVersion,
+  targetArch,
   repositoryRootPath,
   apmRootPath,
   scriptRootPath,

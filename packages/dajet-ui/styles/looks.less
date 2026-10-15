@@ -1,0 +1,103 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Два облика «dajet» — как цвета серии попадают в CSS.
+//
+// Облик выбирается в настройках темы, а признак выбранного облика лежит
+// атрибутом на <html> (его ставит lib/main.js). «Как в системе» ничего не
+// слушает: для него здесь медиазапрос prefers-color-scheme, поэтому окно
+// меняется вместе с Mac само.
+//
+// Почему переменные CSS, а не LESS: LESS считает цвета один раз при сборке
+// стилей, а облик обязан меняться на ходу. Поэтому весь цвет в правилах —
+// через var(--dajet-*), и арифметики над цветом в правилах нет.
+//
+// Значения по умолчанию (:root) — тёмные: до того, как тема насчитала облик,
+// ничего не мигает светлым.
+// ─────────────────────────────────────────────────────────────────────────────
+
+@import "palette.less";
+
+.dajet-dark-look() {
+  // Поверхности: матовый — одна почти-чёрная, ступени едва заметны.
+  --dajet-ground: @dajet-ground-dark;
+  --dajet-base: #0c0d10;
+  --dajet-panel: #101114;
+  --dajet-side: #131417;
+  --dajet-inset: #14161a;
+  --dajet-overlay: #15171b;
+
+  // Текст: свет серии и два его шага вниз.
+  --dajet-ink: @dajet-ink-dark;
+  --dajet-ink-strong: #ffffff;
+  --dajet-muted: @dajet-muted-dark;
+  --dajet-faint: @dajet-faint-dark;
+
+  // Терракота серии и то, что рисуется поверх неё.
+  --dajet-accent: @dajet-accent-dark;
+  --dajet-on-accent: @dajet-on-accent-dark;
+
+  // Состояния и стекло.
+  --dajet-hairline: @dajet-hairline-dark;
+  --dajet-hover: @dajet-hover-dark;
+  --dajet-wash: @dajet-wash-dark;
+  --dajet-sheen: @dajet-sheen-dark;
+  --dajet-scrollbar: rgba(255, 255, 255, 0.14);
+  --dajet-button: #17191d;
+  --dajet-button-hover: #1f2227;
+
+  // Смысловые цвета.
+  --dajet-info: @dajet-info-dark;
+  --dajet-success: @dajet-success-dark;
+  --dajet-warning: @dajet-warning-dark;
+  --dajet-error: @dajet-error-dark;
+}
+
+.dajet-light-look() {
+  // Стекло: тёплый фон серии, холодная боковая колонка, светлая бумага
+  // редактора — так же устроен браузер серии.
+  --dajet-ground: @dajet-ground-light;
+  --dajet-base: #fbf9f3;
+  --dajet-panel: #efece3;
+  --dajet-side: #f5f7fa;
+  --dajet-inset: #e9e5da;
+  --dajet-overlay: #fffdf9;
+
+  --dajet-ink: @dajet-ink-light;
+  --dajet-ink-strong: #000000;
+  --dajet-muted: @dajet-muted-light;
+  --dajet-faint: @dajet-faint-light;
+
+  --dajet-accent: @dajet-accent-light;
+  --dajet-on-accent: @dajet-on-accent-light;
+
+  --dajet-hairline: @dajet-hairline-light;
+  --dajet-hover: @dajet-hover-light;
+  --dajet-wash: @dajet-wash-light;
+  --dajet-sheen: @dajet-sheen-light;
+  --dajet-scrollbar: rgba(0, 0, 0, 0.18);
+  --dajet-button: #fbf9f3;
+  --dajet-button-hover: #f0ece0;
+
+  --dajet-info: @dajet-info-light;
+  --dajet-success: @dajet-success-light;
+  --dajet-warning: @dajet-warning-light;
+  --dajet-error: @dajet-error-light;
+}
+
+:root {
+  .dajet-dark-look();
+}
+
+html[data-dajet-look="dark"] {
+  .dajet-dark-look();
+}
+
+html[data-dajet-look="light"],
+html[data-dajet-look="system"] {
+  .dajet-light-look();
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-dajet-look="system"] {
+    .dajet-dark-look();
+  }
+}

@@ -63,6 +63,29 @@ const EXCLUDE_REGEXPS_SOURCES = [
   // node_modules of the fuzzy-native package are only required for building it.
   escapeRegExp(path.join('node_modules', 'fuzzy-native', 'node_modules')),
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // ATOM LITE: что не попадает в готовое приложение.
+  //
+  // Здесь осталось только то, что действительно лишнее на macOS: инструменты
+  // подписи (они нужны сборке, а не редактору) и модули, существующие только
+  // для Windows. Всё остальное лишнее из приложения убрано иначе — тестовые
+  // и отладочные пакеты больше не ставятся вообще (см. package.json и
+  // docs/WEIGHT-RU.md), поэтому исключать их здесь нечего.
+  //
+  // Отдельно про moment: раньше он исключался как «зависимость chart.js», но
+  // его читает пакет notifications (`notifications-log-item.coffee`) — без него
+  // падал бы журнал уведомлений. Возвращён в сборку.
+  // ───────────────────────────────────────────────────────────────────────────
+
+  // Инструменты подписи и нотаризации — нужны только сборке (script/lib).
+  escapeRegExp(path.join('node_modules', 'electron-osx-sign')),
+  escapeRegExp(path.join('node_modules', 'electron-notarize')),
+
+  // Существуют только для Windows; подключаются лишь при запуске на Windows.
+  escapeRegExp(path.join('node_modules', 'winreg')),
+  escapeRegExp(path.join('node_modules', 'fswin')),
+  escapeRegExp(path.join('node_modules', 'winattr')),
+
   // Ignore *.cc and *.h files from native modules
   escapeRegExp(path.sep) + '.+\\.(cc|h)$',
 

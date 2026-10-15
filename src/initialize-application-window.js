@@ -26,11 +26,8 @@ if (global.isGeneratingSnapshot) {
   require('deprecation-cop');
   require('dev-live-reload');
   require('encoding-selector');
-  require('exception-reporting');
-  require('dalek');
   require('find-and-replace');
   require('fuzzy-finder');
-  require('github');
   require('git-diff');
   require('go-to-line');
   require('grammar-selector');
@@ -46,9 +43,7 @@ if (global.isGeneratingSnapshot) {
   require('line-ending-selector');
   require('link');
   require('markdown-preview');
-  require('metrics');
   require('notifications');
-  require('open-on-github');
   require('package-generator');
   require('settings-view');
   require('snippets');
@@ -59,7 +54,6 @@ if (global.isGeneratingSnapshot) {
   require('tabs');
   require('timecop');
   require('tree-view');
-  require('update-package-dependencies');
   require('welcome');
   require('whitespace');
   require('wrap-guide');

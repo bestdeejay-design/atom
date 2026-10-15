@@ -4,15 +4,17 @@ const assert = require('assert');
 const childProcess = require('child_process');
 const electronPackager = require('electron-packager');
 const fs = require('fs-extra');
-const hostArch = require('@electron/get').getHostArch;
-const includePathInPackagedApp = require('./include-path-in-packaged-app');
 const getLicenseText = require('./get-license-text');
 const path = require('path');
 const spawnSync = require('./spawn-sync');
 const template = require('lodash.template');
 
 const CONFIG = require('../config');
-const HOST_ARCH = hostArch();
+
+// ATOM LITE: архитектура сборки берётся из `script/config.js` и по умолчанию
+// совпадает с архитектурой машины. Раньше здесь стоял `hostArch()` из
+// `@electron/get`, а ниже — жёсткая константа 'x64' для macOS.
+const HOST_ARCH = CONFIG.targetArch;
 
 module.exports = function() {
   const appName = getAppName();
@@ -25,7 +27,8 @@ module.exports = function() {
     appBundleId: 'com.github.atom',
     appCopyright: `Copyright © 2014-${new Date().getFullYear()} GitHub, Inc. All rights reserved.`,
     appVersion: CONFIG.appMetadata.version,
-    arch: process.platform === 'darwin' ? 'x64' : HOST_ARCH, // OS X is 64-bit only
+    arch: HOST_ARCH, // ATOM LITE: было жёстко 'x64' для macOS — из-за этого
+    // на Apple Silicon собирался интеловский бинарник под Rosetta
     asar: { unpack: buildAsarUnpackGlobExpression() },
     buildVersion: CONFIG.appMetadata.version,
     derefSymlinks: false,
@@ -84,30 +87,22 @@ module.exports = function() {
 
 function copyNonASARResources(packagedAppPath, bundledResourcesPath) {
   console.log(`Copying non-ASAR resources to ${bundledResourcesPath}`);
-  fs.copySync(
-    path.join(
-      CONFIG.repositoryRootPath,
-      'apm',
-      'node_modules',
-      'atom-package-manager'
-    ),
-    path.join(bundledResourcesPath, 'app', 'apm'),
-    { filter: includePathInPackagedApp }
-  );
+  // ATOM LITE: встроенный менеджер пакетов (apm) больше не копируется в
+  // приложение.
+  //
+  // Раньше здесь целиком лежал `atom-package-manager` — 67 МБ зависимостей
+  // (из них 33 МБ — собственный npm 6), а вместе с ним в сборку попадал и его
+  // Node 12 под x64: apm запускается своим Node, а не Electron. Это был
+  // единственный компонент приложения не под arm64 — на Apple Silicon он
+  // работал бы только через Rosetta и только ради загрузки пакетов из сети.
+  //
+  // Форк собирается без сетевых зависимостей: нужные пакеты кладутся в
+  // сборку файлами. Если apm всё-таки понадобится, путь к своему экземпляру
+  // можно указать в настройке `core.apmPath` (src/package-manager.js).
+  //
+  // Сам apm при этом никуда не делся из сборки: он по-прежнему ставит
+  // зависимости приложения на этапе `script/bootstrap` (script/lib/install-apm.js).
   if (process.platform !== 'win32') {
-    // Existing symlinks on user systems point to an outdated path, so just symlink it to the real location of the apm binary.
-    // TODO: Change command installer to point to appropriate path and remove this fallback after a few releases.
-    fs.symlinkSync(
-      path.join('..', '..', 'bin', 'apm'),
-      path.join(
-        bundledResourcesPath,
-        'app',
-        'apm',
-        'node_modules',
-        '.bin',
-        'apm'
-      )
-    );
     fs.copySync(
       path.join(CONFIG.repositoryRootPath, 'atom.sh'),
       path.join(bundledResourcesPath, 'app', 'atom.sh')
@@ -131,14 +126,9 @@ function copyNonASARResources(packagedAppPath, bundledResourcesPath) {
       path.join(packagedAppPath, 'atom.png')
     );
   } else if (process.platform === 'win32') {
-    [
-      'atom.sh',
-      'atom.js',
-      'apm.cmd',
-      'apm.sh',
-      'file.ico',
-      'folder.ico'
-    ].forEach(file =>
+    // ATOM LITE: apm.cmd и apm.sh отсюда убраны вместе с самим менеджером
+    // пакетов.
+    ['atom.sh', 'atom.js', 'file.ico', 'folder.ico'].forEach(file =>
       fs.copySync(
         path.join(CONFIG.repositoryRootPath, 'resources', 'win', file),
         path.join(bundledResourcesPath, 'cli', file)

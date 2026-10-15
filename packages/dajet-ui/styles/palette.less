@@ -1,0 +1,55 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Палитра «dajet». Источник — Sources/DajetPlayer/Design.swift (репозиторий
+// bestdeejay-design/dajet-player), enum Palette.Pair и Palette.Glass:
+//
+//   · тёмный облик — матовый: одна почти-чёрная поверхность, ничего серого;
+//   · светлый облик — стекло: тёплый фон серии #F4F1E8 и холодная боковая
+//     колонка (0.96, 0.97, 0.98) — так устроен и браузер серии;
+//   · терракота #C1542B на светлом и её светлый вариант #E8AE8C на тёмном:
+//     единственный цвет, которым в серии что-то помечено.
+//
+// Здесь только цвета. Расстояния — в ui-variables.less, правила — в chrome.less.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Тёмный «матовый» облик ------------------------------------------------------
+
+@dajet-ground-dark: #0a0b0d; // Pair.ground   (0.039, 0.043, 0.051)
+@dajet-ink-dark: #f4f1e8; // Pair.ink      — свет серии #F4F1E8
+@dajet-muted-dark: #a7a59f; // Pair.muted    (0.655, 0.647, 0.624)
+@dajet-faint-dark: #73736f; // Pair.faint    (0.451, 0.451, 0.443)
+@dajet-accent-dark: #e8ae8c; // Pair.accent   (0.910, 0.682, 0.549)
+@dajet-on-accent-dark: #0e0f11; // Pair.onAccent (0.055, 0.059, 0.067)
+@dajet-hairline-dark: rgba(255, 255, 255, 0.09); // Pair.hairline
+@dajet-hover-dark: rgba(255, 255, 255, 0.055); // Pair.hover
+@dajet-wash-dark: rgba(232, 174, 140, 0.14); // Pair.wash     — текущая строка
+
+// Светлое «стекло» ------------------------------------------------------------
+
+@dajet-ground-light: #f4f1e8; // Pair.ground   (0.957, 0.945, 0.910)
+@dajet-ink-light: #16181c; // Pair.ink      (0.086, 0.094, 0.110)
+@dajet-muted-light: #6b6d71; // Pair.muted
+@dajet-faint-light: #999ba0; // Pair.faint
+@dajet-accent-light: #c1542b; // Pair.accent   (0.757, 0.329, 0.169)
+@dajet-on-accent-light: #ffffff; // Pair.onAccent
+@dajet-hairline-light: rgba(0, 0, 0, 0.1);
+@dajet-hover-light: rgba(0, 0, 0, 0.045);
+@dajet-wash-light: rgba(193, 84, 43, 0.1);
+
+// Блеск стекла (Palette.Glass.sheen). Светлое стекло в окне Atom стоит над
+// тёплым фоном, а не над рабочим столом, поэтому блеск здесь плотнее, чем
+// в плеере: иначе стекла не видно. Подъём и подошву панели тема не берёт:
+// в окне Atom у панелей нет того объёма, который они рисовали бы.
+@dajet-sheen-light: rgba(255, 255, 255, 0.7);
+@dajet-sheen-dark: rgba(255, 255, 255, 0.04);
+
+// Состояния: в серии их нет — взяты тёплыми и приглушёнными, чтобы не спорить
+// с терракотой и читаться на обоих обликах (контраст ≥ 4.5:1 к своему фону).
+
+@dajet-info-dark: #93b4cf;
+@dajet-success-dark: #a3bd96;
+@dajet-warning-dark: #dfb478;
+@dajet-error-dark: #e09a86;
+@dajet-info-light: #3f6a8e;
+@dajet-success-light: #4e7a46;
+@dajet-warning-light: #96631a;
+@dajet-error-light: #b4491f;

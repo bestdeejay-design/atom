@@ -300,18 +300,61 @@ module.exports = function(packagedAppPath) {
     );
 
     console.log('Generating startup blob with mksnapshot');
-    childProcess.spawnSync(process.execPath, [
-      path.join(
-        CONFIG.repositoryRootPath,
-        'script',
-        'node_modules',
-        'electron-mksnapshot',
-        'mksnapshot.js'
-      ),
-      snapshotScriptPath,
-      '--output_dir',
-      CONFIG.buildOutputPath
-    ]);
+    // ATOM LITE: раньше результат mksnapshot не проверялся вообще, а его вывод
+    // терялся — spawnSync по умолчанию собирает stdout/stderr в буфер, который
+    // никто не читает. Сборка при этом молча шла дальше и падала позже, уже на
+    // переименовании файла, с невнятным «ENOENT: rename v8_context_snapshot.bin».
+    // Теперь вывод печатается, а результат проверяется.
+    const mksnapshotScriptPath = path.join(
+      CONFIG.repositoryRootPath,
+      'script',
+      'node_modules',
+      'electron-mksnapshot',
+      'mksnapshot.js'
+    );
+    const producedSnapshotPath = path.join(
+      CONFIG.buildOutputPath,
+      'v8_context_snapshot.bin'
+    );
+    const runMksnapshot = extraArgs => {
+      const result = childProcess.spawnSync(
+        process.execPath,
+        [
+          mksnapshotScriptPath,
+          snapshotScriptPath,
+          '--output_dir',
+          CONFIG.buildOutputPath
+        ].concat(extraArgs),
+        { encoding: 'utf8' }
+      );
+      if (result.stdout) process.stdout.write(result.stdout);
+      if (result.stderr) process.stderr.write(result.stderr);
+      if (result.error) {
+        console.error(`mksnapshot не удалось запустить: ${result.error.message}`);
+      } else if (result.status !== 0) {
+        console.error(
+          `mksnapshot завершился с кодом ${result.status}` +
+            (result.signal ? ` (сигнал ${result.signal})` : '')
+        );
+      }
+      return result;
+    };
+
+    runMksnapshot([]);
+    if (!fs.existsSync(producedSnapshotPath)) {
+      // ATOM LITE: запасной вариант. Бинарник mksnapshot пишет ещё и
+      // вспомогательный файл gen/v8/embedded.S относительно своего рабочего
+      // каталога — обёртка electron-mksnapshot запускает его из временного
+      // каталога, и если каталога gen/v8 там нет, mksnapshot падает, не создав
+      // снапшот вовсе. Пустой gen/v8 рядом с бинарником заранее готовит
+      // script/lib/install-script-dependencies.js; здесь — второй шанс:
+      // перенаправляем вспомогательный файл в никуда.
+      const embeddedSrc = process.platform === 'win32' ? 'NUL' : '/dev/null';
+      console.error(
+        `Снапшот не создан — пробую mksnapshot повторно с --embedded_src=${embeddedSrc}`
+      );
+      runMksnapshot([`--embedded_src=${embeddedSrc}`]);
+    }
 
     let startupBlobDestinationPath;
     if (process.platform === 'darwin') {
@@ -330,11 +373,36 @@ module.exports = function(packagedAppPath) {
         process.platform === 'darwin' &&
         snapshotBinary === 'v8_context_snapshot.bin'
       ) {
-        // TODO: check if we're building for arm64 and use the arm64 version of the binary
+        // ATOM LITE: имя снапшота зависит от целевой архитектуры.
+        //
+        // Electron на macOS ищет файл со строгим именем:
+        //   v8_context_snapshot.x86_64.bin — для Intel
+        //   v8_context_snapshot.arm64.bin  — для Apple Silicon
+        //
+        // Раньше здесь было жёстко прописано x86_64 с TODO про arm64 — из-за
+        // этого нативная сборка под M-чипы не запускалась вовсе (Electron не
+        // находил снапшот по своему имени).
+        const snapshotArch = CONFIG.targetArch === 'arm64' ? 'arm64' : 'x86_64';
         destinationPath = path.join(
           startupBlobDestinationPath,
-          'v8_context_snapshot.x86_64.bin'
+          `v8_context_snapshot.${snapshotArch}.bin`
         );
+      }
+      // ATOM LITE: если снапшот не сгенерировался, оставляем тот, что поставляет
+      // сам Electron (он лежит в том же каталоге). Приложение при этом работает,
+      // только стартует чуть медленнее. Раньше сборка в этом случае падала —
+      // причём сначала удаляла штатный снапшот Electron, а потом не находила
+      // свой и умирала на переименовании.
+      const generatedBlobPath = path.join(
+        CONFIG.buildOutputPath,
+        snapshotBinary
+      );
+      if (!fs.existsSync(generatedBlobPath)) {
+        console.error(
+          `Внимание: ${snapshotBinary} не сгенерирован — оставляю снапшот Electron, ` +
+            'приложение запустится немного медленнее'
+        );
+        continue;
       }
       console.log(`Moving generated startup blob into "${destinationPath}"`);
       try {
@@ -345,10 +413,7 @@ module.exports = function(packagedAppPath) {
           throw err;
         }
       }
-      fs.renameSync(
-        path.join(CONFIG.buildOutputPath, snapshotBinary),
-        destinationPath
-      );
+      fs.renameSync(generatedBlobPath, destinationPath);
     }
   });
 };

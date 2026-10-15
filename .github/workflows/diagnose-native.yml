@@ -1,0 +1,82 @@
+# Диагностика архитектуры нативных модулей. Запускается ТОЛЬКО вручную:
+# Actions → «Диагностика нативных модулей» → Run workflow.
+#
+# По push не запускается сознательно — обычной сборке он не нужен, а прогон
+# занимает полчаса. Оставлен как инструмент: если однажды модуль снова соберётся
+# не той архитектурой, эта проба за один запуск покажет, какой из флагов виноват.
+#
+# Что показала первая проба (прогон 38570196822) на self-hosted macOS arm64:
+#   · clang из нативного shell        → arm64;
+#   · clang из node x64 (Rosetta), без флагов → x86_64;
+#   · --arch=arm64 (без -arch в CFLAGS) → x86_64 (gyp-генератор make флаг не передаёт);
+#   · -arch arm64 в CFLAGS/LDFLAGS    → arm64 (чистый, вторая половина не берётся);
+#   · -target arm64-apple-macos11.0   → arm64;
+#   · оба флага вместе                → arm64.
+#
+# Вывод: голой компиляции «-arch arm64» достаточно, а универсальные бинарники
+# приходят из сборки модулей apm. Поэтому в сборке они не разбираются, а просто
+# ужимаются до целевой архитектуры (script/lib/thin-native-modules.js).
+#
+# Логи job-ов извне не читаются, поэтому итоги печатаются аннотациями.
+name: Диагностика нативных модулей
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    name: Проба архитектур
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Клонирование
+        uses: actions/checkout@v4
+
+      - name: Rosetta 2
+        run: sudo softwareupdate --install-rosetta --agree-to-license
+
+      - name: Node.js 12.16.3 (x64, как в сборке)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '12.16.3'
+          architecture: 'x64'
+
+      - name: Xcode 16.2
+        run: |
+          for v in 16.2 16.1 16.0; do
+            if [ -d "/Applications/Xcode_$v.app" ]; then
+              sudo xcode-select -s "/Applications/Xcode_$v.app/Contents/Developer"
+              break
+            fi
+          done
+
+      - name: Проба — компиляция мелочи разными флагами
+        run: |
+          cat > /tmp/spawn.js <<'EOF'
+          const cp = require('child_process');
+          cp.execSync(process.argv.slice(2).join(' '), {stdio: 'inherit'});
+          EOF
+          printf 'int main(void){return 0;}\n' > /tmp/t.c
+
+          try() { # имя, дальше — аргументы clang (запуск из node x64)
+            local name="$1"; shift
+            rm -f "/tmp/$name"
+            node /tmp/spawn.js clang -x c "$@" /tmp/t.c -o "/tmp/$name" >/dev/null 2>&1
+            echo "::notice title=проба::$name → $(lipo -archs "/tmp/$name" 2>/dev/null || echo 'не собралось')"
+          }
+
+          rm -f /tmp/native; clang -x c /tmp/t.c -o /tmp/native
+          echo "::notice title=проба::нативный shell, без флагов → $(lipo -archs /tmp/native)"
+
+          try noflags
+          try arch-arm64     -arch arm64
+          try target-arm64   -target arm64-apple-macos11.0
+          try arch-and-target -arch arm64 -target arm64-apple-macos11.0
+          try arch-x64       -arch x86_64
+
+          echo "::notice title=проба::окружение → $(env | grep -iE 'arch|flags' | sort | tr '\n' ' ')"
+
+      - name: Итог
+        if: always()
+        run: echo "готово — результат в аннотациях"

@@ -290,7 +290,7 @@ export default class DeprecationCopView {
             data-issue-url={issueURL}
             onclick={event => {
               event.preventDefault();
-              this.openIssueURL(repoURL, issueURL, issueTitle);
+              this.openIssueURL(issueURL);
             }}
           >
             Report Issue
@@ -315,7 +315,7 @@ export default class DeprecationCopView {
             data-issue-url={issueURL}
             onclick={event => {
               event.preventDefault();
-              this.openIssueURL(repoURL, issueURL, issueTitle);
+              this.openIssueURL(issueURL);
             }}
           >
             Report Issue
@@ -343,66 +343,16 @@ export default class DeprecationCopView {
     }
   }
 
-  async openIssueURL(repoURL, issueURL, issueTitle) {
-    const issue = await this.findSimilarIssue(repoURL, issueTitle);
-    if (issue) {
-      shell.openExternal(issue.html_url);
-    } else if (process.platform === 'win32') {
-      // Windows will not launch URLs greater than ~2000 bytes so we need to shrink it
-      shell.openExternal((await this.shortenURL(issueURL)) || issueURL);
-    } else {
-      shell.openExternal(issueURL);
-    }
-  }
-
-  async findSimilarIssue(repoURL, issueTitle) {
-    const url = 'https://api.github.com/search/issues';
-    const repo = repoURL.replace(/http(s)?:\/\/(\d+\.)?github.com\//gi, '');
-    const query = `${issueTitle} repo:${repo}`;
-    const response = await window.fetch(
-      `${url}?q=${encodeURI(query)}&sort=created`,
-      {
-        method: 'GET',
-        headers: {
-          Accept: 'application/vnd.github.v3+json',
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    if (response.ok) {
-      const data = await response.json();
-      if (data.items) {
-        const issues = {};
-        for (const issue of data.items) {
-          if (issue.title.includes(issueTitle) && !issues[issue.state]) {
-            issues[issue.state] = issue;
-          }
-        }
-
-        return issues.open || issues.closed;
-      }
-    }
-  }
-
-  async shortenURL(url) {
-    let encodedUrl = encodeURIComponent(url).substr(0, 5000); // is.gd has 5000 char limit
-    let incompletePercentEncoding = encodedUrl.indexOf(
-      '%',
-      encodedUrl.length - 2
-    );
-    if (incompletePercentEncoding >= 0) {
-      // Handle an incomplete % encoding cut-off
-      encodedUrl = encodedUrl.substr(0, incompletePercentEncoding);
-    }
-
-    let result = await fetch('https://is.gd/create.php?format=simple', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `url=${encodedUrl}`
-    });
-
-    return result.text();
+  async openIssueURL(issueURL) {
+    // ATOM LITE: сетевые вызовы удалены.
+    //
+    // Раньше здесь происходило два похода в сеть:
+    //   1) поиск похожего issue через https://api.github.com/search/issues
+    //   2) сокращение ссылки через https://is.gd — при этом текст вашего
+    //      отчёта уходил на сторонний сервис
+    // Теперь ссылка на новый issue просто открывается во внешнем браузере.
+    // Сеть задействует только ваш браузер и только по вашему клику.
+    shell.openExternal(issueURL);
   }
 
   getRepoURL(packageName) {

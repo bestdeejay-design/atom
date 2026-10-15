@@ -167,11 +167,7 @@ module.exports = class ApplicationMenu {
         label: 'Atom',
         id: 'Atom',
         submenu: [
-          {
-            label: 'Check for Update',
-            id: 'Check for Update',
-            metadata: { autoUpdate: true }
-          },
+          // ATOM LITE: пункт «Check for Update» убран — обновляться неоткуда.
           {
             label: 'Reload',
             id: 'Reload',

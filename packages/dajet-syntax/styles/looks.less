@@ -1,0 +1,69 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Облики подсветки. Признак выбранного облика ставит UI-тема «dajet» атрибутом
+// на <html>; обе темы читают его и потому всегда согласованы.
+//
+// Поверхность, текст и терракота берутся у UI-темы, если она активна
+// (var(--dajet-base) и т.д.), а если тема подсветки работает с чужим
+// интерфейсом — берёт свои тёмные значения. Поэтому здесь их не дублируем.
+// ─────────────────────────────────────────────────────────────────────────────
+
+.dajet-syntax-dark() {
+  --dajet-syn-comment: #7a7871;
+  --dajet-syn-keyword: #e8ae8c;
+  --dajet-syn-string: #a9b58a;
+  --dajet-syn-number: #d9a05b;
+  --dajet-syn-function: #9fb6c9;
+  --dajet-syn-class: #dcc9a8;
+  --dajet-syn-attribute: #c9c4b6;
+  --dajet-syn-punctuation: #8a877e;
+  --dajet-syn-invalid: #e0836f;
+
+  --dajet-syn-cursor-line: rgba(255, 255, 255, 0.03);
+  --dajet-syn-selection: rgba(232, 174, 140, 0.19);
+  --dajet-syn-guide: rgba(255, 255, 255, 0.07);
+  --dajet-syn-invisible: rgba(255, 255, 255, 0.15);
+  --dajet-syn-gutter: #73736f;
+  --dajet-syn-added: #a3bd96;
+  --dajet-syn-modified: #dfb478;
+  --dajet-syn-removed: #d0836f;
+}
+
+.dajet-syntax-light() {
+  --dajet-syn-comment: #8c8578;
+  --dajet-syn-keyword: #b4491f;
+  --dajet-syn-string: #4f7040;
+  --dajet-syn-number: #96631a;
+  --dajet-syn-function: #38607f;
+  --dajet-syn-class: #7a6544;
+  --dajet-syn-attribute: #6b6d71;
+  --dajet-syn-punctuation: #87837a;
+  --dajet-syn-invalid: #b4491f;
+
+  --dajet-syn-cursor-line: rgba(0, 0, 0, 0.035);
+  --dajet-syn-selection: rgba(193, 84, 43, 0.16);
+  --dajet-syn-guide: rgba(0, 0, 0, 0.08);
+  --dajet-syn-invisible: rgba(0, 0, 0, 0.2);
+  --dajet-syn-gutter: #999ba0;
+  --dajet-syn-added: #4e7a46;
+  --dajet-syn-modified: #96631a;
+  --dajet-syn-removed: #a6483a;
+}
+
+:root {
+  .dajet-syntax-dark();
+}
+
+html[data-dajet-look="dark"] {
+  .dajet-syntax-dark();
+}
+
+html[data-dajet-look="light"],
+html[data-dajet-look="system"] {
+  .dajet-syntax-light();
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-dajet-look="system"] {
+    .dajet-syntax-dark();
+  }
+}

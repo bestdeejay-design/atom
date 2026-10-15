@@ -1,0 +1,574 @@
+name: Сборка Atom Lite
+
+# Заменяет мёртвый Azure Pipelines (script/vsts): он ссылался на образ
+# macos-10.15, которого больше не существует, и на Node 12.16.3 из 2020 года.
+#
+# Даёт то, чего у форка не было: возможность собрать Atom.app в облаке GitHub
+# и скачать готовый архив, не настраивая сборочное окружение у себя.
+# Для публичных репозиториев macOS-раннеры бесплатны.
+#
+# ── ЧТО СОБИРАЕТСЯ ──────────────────────────────────────────────────────────
+#
+# Только Apple Silicon (arm64). Сборка под Intel удалена: она была нужна как
+# «страховка» на время переезда на нативную архитектуру, а после успешного
+# переезда превратилась в лишние полчаса CI на каждый push. Приложению из этого
+# репозитория на интеловском Mac всё равно нечего делать — оно собирается под
+# ту машину, на которой будет работать.
+#
+# ── КОГДА ЗАПУСКАЕТСЯ ───────────────────────────────────────────────────────
+#
+# По push в любую ветку и по кнопке (workflow_dispatch). Сборка идёт ~40 минут,
+# поэтому правки одной документации лучше пушить вместе с кодом. Если нужно
+# просто перезапустить сборку — Actions → «Сборка Atom Lite» → Run workflow.
+#
+# ── Что пришлось починить, чтобы это заработало ─────────────────────────────
+#
+# 1. АРХИТЕКТУРА. Бесплатные macOS-раннеры у GitHub только arm64 (Apple
+#    Silicon); интеловские ярлыки вроде macos-15-intel остались на платных
+#    тарифах. Скрипты сборки Atom написаны под Node 12.16.3, а Node 12
+#    существует только для x64 — поэтому ставим Rosetta 2 и запускаем Node 12
+#    как x64-процесс. Целевую архитектуру задаём отдельно, через ATOM_ARCH.
+#
+# 2. XCODE. С Xcode 16.3 Apple начала определять TARGET_OS_MAC, от чего ломается
+#    старый zlib внутри git-utils/libgit2: он подменяет fdopen, и системный
+#    <stdio.h> перестаёт компилироваться (_stdio.h:318: error: expected ')').
+#    Обе задачи поэтому переключаются на Xcode 16.2.
+#
+# 3. МЁРТВЫЙ atom.io. apm передаёт node-gyp адрес заголовков Electron
+#    https://atom.io/download/electron — домен закрыт вместе с проектом, вместо
+#    архива приходит HTML-страница. Скачиваем заголовки сами (ATOM_ELECTRON_URL
+#    + прогрев кэша node-gyp), как это сделано в живом форке Pulsar.
+#
+# 4. APPLE И iconv. В Xcode 16 тип iconv_t перестал быть void* и стал указателем
+#    на неполный тип, из-за чего не собирается superstring — ядро текстовых
+#    буферов Atom. Лечится заголовком script/macos-iconv-compat.h.
+#
+# 5. apm И АРХИТЕКТУРА. atom-package-manager для macOS жёстко требует x64
+#    (lib/apm.js, getElectronArch) — поэтому нативной сборки под Apple Silicon
+#    не существовало в принципе. Правка живёт в script/lib/install-apm.js.
+#
+# 6. КРОСС-СБОРКА НА ОДНОМ МАШИНЕ. apm передаёт node-gyp --arch=arm64, но этого
+#    мало: на macOS node-gyp собирает через gyp-генератор `make`, а тот флаг
+#    -arch компилятору не передаёт вообще. Архитектуру выбирает сам clang — и,
+#    запущенный из x64-процесса (наш Node 12 под Rosetta), целится в x86_64.
+#    Поэтому для зависимостей приложения добавляем -arch <цель> в
+#    CFLAGS/CXXFLAGS/CPPFLAGS/LDFLAGS (script/lib/run-apm-install.js).
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+    inputs:
+      # Кнопка «Run workflow» в интерфейсе GitHub. Обычная сборка отчёты не
+      # коммитит — иначе каждый push оставлял бы в истории мусор. А при запуске
+      # вручную с этой галочкой вес и списки модулей сохраняются в .ci-logs.
+      # То же самое делает слово [logs] в сообщении коммита.
+      save-report:
+        description: 'Сохранить отчёт (вес, списки модулей) в .ci-logs'
+        type: boolean
+        default: false
+
+# Нужно, чтобы при падении сборки CI мог сохранить логи в репозиторий: обычные
+# логи job'ов недоступны извне, а аннотации ограничены по количеству и приходят
+# в произвольном порядке.
+permissions:
+  contents: write
+
+jobs:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Сборка под Apple Silicon — единственная.
+  #
+  # Раньше её не существовало: apm для macOS жёстко требовал x64. Теперь apm
+  # (после правки в script/lib/install-apm.js) берёт архитектуру из ATOM_ARCH,
+  # поэтому достаточно задать её здесь — дальше установка нативных модулей,
+  # загрузка Electron и упаковка идут под arm64, как обычно.
+  #
+  # npm_config_arch=arm64 нужен ещё и потому, что от него зависит загрузка
+  # electron-mksnapshot: снапшот V8 обязан быть собран той же архитектурой,
+  # что и целевой Electron.
+  # ═══════════════════════════════════════════════════════════════════════════
+  build-arm64:
+    name: macOS arm64 (Apple Silicon)
+    runs-on: macos-15
+    timeout-minutes: 180
+
+    env:
+      # Целевая архитектура: apm читает ATOM_ARCH (наша правка),
+      # script/config.js — npm_config_arch.
+      ATOM_ARCH: arm64
+      npm_config_arch: arm64
+      npm_config_build_from_source: 'true'
+      ATOM_ELECTRON_URL: https://artifacts.electronjs.org/headers/dist
+      npm_config_ensure: 'true'
+      CFLAGS: -include ${{ github.workspace }}/script/macos-iconv-compat.h
+      CXXFLAGS: -include ${{ github.workspace }}/script/macos-iconv-compat.h
+
+    steps:
+      - name: Клонирование
+        uses: actions/checkout@v4
+
+      - name: Rosetta 2 (для Node 12 — сборки под arm64 у него нет)
+        run: sudo softwareupdate --install-rosetta --agree-to-license
+
+      - name: Node.js 12.16.3 (x64)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '12.16.3'
+          architecture: 'x64'
+
+      - name: Python 3.9 (node-gyp 5 не работает с Python 3.12+)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Xcode 16.2 (в 16.3+ старые нативные модули не собираются)
+        run: |
+          for v in 16.2 16.1 16.0; do
+            if [ -d "/Applications/Xcode_$v.app" ]; then
+              sudo xcode-select -s "/Applications/Xcode_$v.app/Contents/Developer"
+              echo "Выбран Xcode $v"
+              break
+            fi
+          done
+          echo "DEVELOPER_DIR: $(xcode-select -p)"
+          xcodebuild -version
+          echo "SDK: $(xcrun --show-sdk-version)"
+
+      - name: Окружение
+        run: |
+          echo "Машина:       $(uname -m)"
+          echo "Node:         $(node --version) (process.arch=$(node -p 'process.arch'))"
+          echo "npm:          $(npm --version)"
+          echo "Python:       $(python3 --version)"
+          echo "Целевая арх.: $ATOM_ARCH (npm_config_arch=$npm_config_arch)"
+          sw_vers
+
+      - name: Заголовки Electron 11.5.0 в кэш node-gyp
+        run: |
+          set -euo pipefail
+          VDIR="$HOME/.node-gyp/11.5.0"
+          mkdir -p "$VDIR"
+          BASE="${ATOM_ELECTRON_URL:-https://artifacts.electronjs.org/headers/dist}"
+          echo "Основная ссылка: $BASE/v11.5.0/node-v11.5.0-headers.tar.gz"
+          curl -sSL -o /dev/null -w '  HTTP %{http_code} → %{url_effective}\n' \
+            "$BASE/v11.5.0/node-v11.5.0-headers.tar.gz" || true
+
+          for url in \
+            "$BASE/v11.5.0/node-v11.5.0-headers.tar.gz" \
+            "https://electronjs.org/headers/v11.5.0/node-v11.5.0-headers.tar.gz" \
+            "https://artifacts.electronjs.org/headers/dist/v11.5.0/node-v11.5.0-darwin-arm64.tar.gz" \
+            "https://artifacts.electronjs.org/headers/dist/v11.5.0/node-v11.5.0-darwin-x64.tar.gz" \
+          ; do
+            echo "Пробую: $url"
+            if curl -fsSL --retry 2 --connect-timeout 20 -o /tmp/node-headers.tgz "$url" \
+               && tar -tzf /tmp/node-headers.tgz >/dev/null 2>&1; then
+              rm -rf "$VDIR"; mkdir -p "$VDIR"
+              tar -xzf /tmp/node-headers.tgz --strip-components=1 -C "$VDIR"
+              if [ -f "$VDIR/include/node/node.h" ]; then
+                echo 9 > "$VDIR/installVersion"
+                echo "✓ Заголовки на месте, файлов .h: $(find "$VDIR" -name '*.h' | wc -l | tr -d ' ')"
+                exit 0
+              fi
+              echo "…  в архиве нет include/node/node.h"
+            else
+              echo "…  не скачалось"
+            fi
+          done
+          echo "::error title=headers::Заголовки Electron 11.5.0 не скачались ни с одного зеркала"
+          exit 1
+
+      - name: ripgrep под целевую архитектуру
+        run: |
+          node script/lib/prepare-ripgrep.js 2>&1 | tee rg.log
+          CACHE=$(node -p "require('path').join(require('os').tmpdir(),'vscode-ripgrep-cache-1.9.0','ripgrep-v12.1.1-x86_64-apple-darwin.tar.gz')")
+          if [ -f "$CACHE" ]; then
+            echo "::notice title=ripgrep::архив для $ATOM_ARCH в кэше ($(du -h "$CACHE" | cut -f1)) — в сеть пакет не пойдёт"
+          else
+            echo "::warning title=ripgrep::архива в кэше нет — пакет попробует скачать сам, вероятен 403"
+          fi
+          grep -a "ripgrep:" rg.log | tr -d '\r' | while IFS= read -r l; do
+            echo "::notice title=ripgrep::${l#ripgrep: }"
+          done
+
+      - name: Bootstrap (нативные модули под arm64)
+        id: bootstrap
+        run: |
+          set +e
+          script/bootstrap 2>&1 | tee bootstrap.log
+          exit ${PIPESTATUS[0]}
+
+      - name: Диагностика bootstrap — ошибки npm
+        if: failure()
+        run: |
+          grep -a "npm ERR" bootstrap.log | tail -8 | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=npm-err::$l"
+          done
+
+      - name: Диагностика bootstrap — ошибки сборки
+        if: failure()
+        run: |
+          grep -aiE "gyp ERR|error:|fatal error|not found:|ETARGET|E404|ENOTFOUND|Failed to" bootstrap.log | tail -10 | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=build-err::$l"
+          done
+
+      - name: Диагностика bootstrap — окно вокруг первой ошибки
+        if: failure()
+        run: |
+          LINE=$(grep -a -n "error:" bootstrap.log | head -1 | cut -d: -f1)
+          if [ -n "$LINE" ]; then
+            FROM=$((LINE-5)); [ "$FROM" -lt 1 ] && FROM=1
+            sed -n "${FROM},$((LINE+15))p" bootstrap.log | tr -d '\r' | while IFS= read -r l; do
+              echo "::error title=first-error::$l"
+            done
+          fi
+
+      - name: Диагностика bootstrap — контекст
+        if: failure()
+        run: |
+          tail -20 bootstrap.log | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=context::$l"
+          done
+
+      # Отдельная проверка генератора снапшота: если он не работает для этой
+      # архитектуры, лучше узнать об этом до многоминутной сборки.
+      # Печатаем архитектуры всех нативных модулей сразу после bootstrap:
+      # так видно, что именно (и где) осталось собранным под x86_64 ещё до упаковки.
+      - name: Диагностика — архитектуры нативных модулей
+        if: always()
+        run: |
+          set +e
+          : > modules-bootstrap.txt
+          for d in node_modules apm/node_modules apm/node_modules/atom-package-manager/node_modules script/node_modules out/app/node_modules; do
+            echo "=== $d ===" >> modules-bootstrap.txt
+            if [ -d "$d" ]; then
+              find "$d" -name '*.node' 2>/dev/null | sort | while IFS= read -r f; do
+                printf '%s %s\n' "$(lipo -archs "$f" 2>/dev/null || echo '?')" "$f" >> modules-bootstrap.txt
+              done
+            else
+              echo "(нет каталога)" >> modules-bootstrap.txt
+            fi
+          done
+          echo "итого .node в корневом node_modules: $(find node_modules -name '*.node' 2>/dev/null | wc -l | tr -d ' ')" >> modules-bootstrap.txt
+          wc -l modules-bootstrap.txt
+      # mksnapshot на arm64 падает с «Unable to open file "gen/v8/embedded.S"»:
+      # бинарник пишет вспомогательный файл относительно рабочего каталога,
+      # а обёртка electron-mksnapshot запускает его из временного каталога, где
+      # никакого gen/v8 нет. Проверяем сразу несколько вариантов запуска —
+      # из лога будет видно, какой из них рабочий.
+      - name: Проверка mksnapshot
+        run: |
+          set +e
+          BIN_DIR=script/node_modules/electron-mksnapshot/bin
+          {
+            echo "=== содержимое $BIN_DIR ==="
+            find "$BIN_DIR" -maxdepth 3 2>/dev/null | sort | head -60
+            echo "=== флаги mksnapshot про embedded/startup ==="
+            MKS=$(find "$BIN_DIR" -maxdepth 1 -type f -name 'mksnapshot' | head -1)
+            if [ -n "$MKS" ]; then
+              "$MKS" --help 2>&1 | grep -i -E "embedded|startup" | head -12
+            else
+              echo "бинарь mksnapshot не найден"
+            fi
+          } > mksnapshot-test.log 2>&1
+          echo 'var snapshotTest = 1;' > "$RUNNER_TEMP/snapshot-test.js"
+          try_run() {
+            local label="$1"; shift
+            local dir="$RUNNER_TEMP/mks-out-$label"
+            rm -rf "$dir"; mkdir -p "$dir"
+            echo "=== попытка «$label» ===" >> mksnapshot-test.log
+            node script/node_modules/electron-mksnapshot/mksnapshot.js "$RUNNER_TEMP/snapshot-test.js" --output_dir "$dir" "$@" >> mksnapshot-test.log 2>&1
+            local code=$?
+            echo "код возврата «$label»: $code" >> mksnapshot-test.log
+            ls -la "$dir" >> mksnapshot-test.log 2>&1
+            return $code
+          }
+          try_run base; CODE_BASE=$?
+          try_run devnull --embedded_src=/dev/null; CODE_NULL=$?
+          try_run file --embedded_src="$RUNNER_TEMP/embedded.S"; CODE_FILE=$?
+          FOUND=""
+          for label in base devnull file; do
+            f="$RUNNER_TEMP/mks-out-$label/v8_context_snapshot.bin"
+            if [ -f "$f" ]; then
+              echo "::notice title=mksnapshot::снапшот создан вариантом «$label»: $(file -b "$f")"
+              FOUND="$label"
+            fi
+          done
+          if [ -z "$FOUND" ]; then
+            echo "::error title=mksnapshot::снапшот НЕ создан ни одним способом (коды: $CODE_BASE/$CODE_NULL/$CODE_FILE)"
+            grep -a -E "Unable|Error|error|Loading" mksnapshot-test.log | tail -14 | tr -d '\r' | while IFS= read -r l; do
+              echo "::error title=mksnapshot::$l"
+            done
+          fi
+
+
+      # Темы — это LESS, который компилирует сам редактор (LESS 2.7 через
+      # less-cache). Ошибка в теме ломает окно целиком и видна только при
+      # запуске, поэтому проверяем до долгой сборки: секунды против часа.
+      - name: Проверка тем — LESS и договор переменных
+        run: node script/check-themes.js
+
+      - name: Сборка приложения под arm64
+        id: build
+        run: |
+          set +e
+          script/build --compress-artifacts --no-bootstrap 2>&1 | tee build.log
+          CODE=${PIPESTATUS[0]}
+          echo "код возврата script/build: $CODE"
+          if [ "$CODE" -ne 0 ]; then
+            echo "::error title=код возврата::script/build завершился с кодом $CODE (137 — убит по памяти, 143 — прерван)"
+            exit 1
+          fi
+
+      - name: Диагностика сборки — ошибки по порядку
+        if: failure()
+        run: |
+          echo "::error title=лог::строк в build.log: $(wc -l < build.log | tr -d ' ')"
+          grep -a -n -iE "error|failed|cannot|unable|not found|killed|traceback|no such file" build.log | head -10 | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=ошибка::$l"
+          done
+
+      - name: Диагностика сборки — хвост лога
+        if: failure()
+        run: |
+          tail -10 build.log | grep -a . | tr -d '\r' | while IFS= read -r l; do
+            echo "::error title=хвост::$l"
+          done
+
+      # Аннотации ограничены по количеству и приходят в произвольном порядке,
+      # а логи job'ов недоступны извне. Поэтому при падении сохраняем логи
+      # прямо в репозиторий — с пометкой [skip ci], чтобы не гонять сборку снова.
+
+      - name: Проверка — архитектура и размер
+        if: success()
+        run: |
+          APP=$(ls -d out/*.app 2>/dev/null | head -1)
+          if [ -z "$APP" ]; then
+            echo "::error title=проверка::каталог приложения не найден в out/"
+            ls -la out/ | head -20
+            exit 1
+          fi
+          BIN=$(ls "$APP/Contents/MacOS/"* | head -1)
+          ARCHS=$(lipo -archs "$BIN")
+          echo "::notice title=проверка::бинарник: $ARCHS"
+          echo "::notice title=проверка::приложение $(du -sh "$APP" | cut -f1), архив: $(ls -lh out/*.zip | awk '{print $9, $5}' | tr '\n' ' ')"
+          echo "::notice title=проверка::нативных модулей .node: $(find "$APP" -name '*.node' | wc -l | tr -d ' ')"
+          find "$APP" -name 'v8_context_snapshot*' | while IFS= read -r f; do
+            echo "::notice title=снапшот::$(basename "$f") — $(du -h "$f" | cut -f1)"
+          done
+          RG=$(find "$APP" -type f -name rg | head -1)
+          if [ -n "$RG" ]; then
+            echo "::notice title=ripgrep::$(file -b "$RG")"
+          else
+            echo "::warning title=ripgrep::бинарь rg не найден в приложении"
+          fi
+          if [ "$ARCHS" != "arm64" ]; then
+            echo "::error title=архитектура::ожидался arm64, а получился $ARCHS"
+            exit 1
+          fi
+
+      - name: Вес по частям — что именно занимает место
+        if: success()
+        run: |
+          APP=$(ls -d out/*.app 2>/dev/null | head -1)
+          : > weight.txt
+          size() { du -sk "$1" 2>/dev/null | awk '{printf "%.1f МБ", $1/1024}'; }
+          report() {
+            printf '%-52s %s\n' "$1" "$2" | tee -a weight.txt
+            echo "::notice title=вес::$1 — $2"
+          }
+          report "ВСЁ ПРИЛОЖЕНИЕ (распакованное)" "$(size "$APP")"
+          report "Electron Framework (Chromium + V8)" "$(size "$APP/Contents/Frameworks/Electron Framework.framework")"
+          report "Contents/Frameworks, всего" "$(size "$APP/Contents/Frameworks")"
+          report "Contents/Resources, всего" "$(size "$APP/Contents/Resources")"
+          report "  из них app.asar — код редактора и node_modules" "$(size "$APP/Contents/Resources/app.asar")"
+          report "  из них app.asar.unpacked — нативные модули" "$(size "$APP/Contents/Resources/app.asar.unpacked")"
+          report "  из них app — то, что вне asar (apm больше не копируется)" "$(size "$APP/Contents/Resources/app")"
+          report "архив out/atom-mac.zip (то, что качается)" "$(size out/atom-mac.zip)"
+
+          echo "--- верхний уровень Contents/Resources ---" >> weight.txt
+          du -sk "$APP"/Contents/Resources/* 2>/dev/null | sort -rn | head -15 >> weight.txt || true
+
+          echo "--- что попадёт в app.asar: out/app, верхний уровень ---" >> weight.txt
+          du -sk out/app/* 2>/dev/null | sort -rn | head -15 >> weight.txt || true
+
+          echo "--- out/app/node_modules, топ-40 ---" >> weight.txt
+          du -sk out/app/node_modules/* 2>/dev/null | sort -rn | head -40 >> weight.txt || true
+
+          # Полный список пакетов приложения: топ-40 обрезает хвост, а для
+          # решения «что снять дальше» нужен весь список. Файл маленький.
+          echo "--- out/app/node_modules, все пакеты (КБ) ---" >> weight.txt
+          du -sk out/app/node_modules/* 2>/dev/null | sort -rn >> weight.txt || true
+
+          echo "--- out/app, сумма по расширениям (что занимает место) ---" >> weight.txt
+          find out/app -name '*.map' -o -name '*.md' 2>/dev/null | wc -l >> weight.txt || true
+          echo "файлов .map и .md: (число выше)" >> weight.txt
+          du -csh out/app/node_modules/*/test* out/app/node_modules/*/spec* 2>/dev/null | tail -1 >> weight.txt || true
+
+      - name: Проверка — всё ли действительно arm64
+        if: success()
+        run: |
+          APP=$(ls -d out/*.app 2>/dev/null | head -1)
+          BAD=$(mktemp)
+          : > modules-app.txt
+          find "$APP" -name '*.node' | sort | while IFS= read -r f; do
+            REL="${f#$APP/}"
+            A=$(lipo -archs "$f" 2>/dev/null || echo '?')
+            echo "$A $REL" >> modules-app.txt
+            if [ "$A" = "?" ]; then
+              echo "::notice title=модуль::не Mach-O, пропущено: $REL"
+              continue
+            fi
+            # Страховка на случай, если apm когда-нибудь вернётся в сборку:
+            # он запускается собственным Node 12 под x64, поэтому его модули
+            # собираются под x64 — это не ошибка сборки и не повод её ронять.
+            # Сейчас apm в приложение не копируется (script/lib/package-application.js).
+            case "$REL" in
+              */app/apm/*)
+                echo "::notice title=apm::встроенный apm, x64 — вне правил проверки: $REL ($A)"
+                continue ;;
+            esac
+            echo "::notice title=модуль::$REL → $A"
+            case "$A" in
+              *arm64*) ;;
+              *) echo "нет" >> "$BAD"
+                 echo "::error title=битый модуль::$REL собран не под arm64: $A" ;;
+            esac
+          done
+          RG=$(find "$APP" -type f -name rg | head -1)
+          if [ -n "$RG" ]; then
+            RGINFO=$(file -b "$RG")
+            echo "::notice title=ripgrep::rg → $RGINFO"
+            case "$RGINFO" in
+              *arm64*) ;;
+              *) echo "нет" >> "$BAD"
+                 echo "::error title=ripgrep::сборка ripgrep не под arm64: $RGINFO" ;;
+            esac
+          else
+            echo "::warning title=ripgrep::бинарь rg не найден в приложении"
+          fi
+          if [ -s "$BAD" ]; then
+            echo "::error title=итог::в сборке есть компоненты не под arm64"
+            exit 1
+          fi
+          echo "::notice title=итог::все нативные модули и ripgrep собраны под arm64"
+
+
+      # Когда это нужно: если сборка упала — сохраняем автоматически, чтобы
+      # разбирать причину (логи шагов извне не читаются вовсе). Если сборка
+      # прошла, но нужны цифры веса и списки модулей — попросите явно: либо
+      # словом [logs] в сообщении коммита, либо галочкой при ручном запуске.
+      # Диета: проверка состава, а не только веса. Вес говорит, сколько
+      # приложение занимает; состав — что именно ушло и что осталось на месте.
+      # Список «обязаны быть» — защита от той же ошибки, из-за которой из
+      # сборки уже однажды выпал moment (его читает пакет notifications).
+      - name: Диета — состав приложения
+        if: success()
+        run: |
+          APP=out/app/node_modules
+          {
+            echo "=== убрано из зависимостей: в приложении их быть не должно ==="
+            gone=0; left=0
+            for p in mocha mocha-multi-reporters mocha-junit-reporter chai sinon \
+                     devtron accessibility-developer-tools chart.js highlight.js \
+                     yargs-unparser jasmine-tagged jasmine-reporters jasmine-json \
+                     mock-spawn dugite github telemetry-github @sinonjs \
+                     @atom/babel7-transpiler @babel/core; do
+              if [ -e "$APP/$p" ]; then
+                echo "  ОСТАЛСЯ  $p ($(du -sk "$APP/$p" 2>/dev/null | cut -f1) КБ)"
+                left=$((left+1))
+              else
+                gone=$((gone+1))
+              fi
+            done
+            echo "  ушли: $gone, остались: $left"
+
+            echo
+            echo "=== обязаны быть: без них редактор теряет возможности ==="
+            ok=0; absent=0
+            for p in moment notifications settings-view spell-check spelling-manager \
+                     less less-cache text-buffer superstring git-utils emoji-images \
+                     vscode-ripgrep tree-sitter babel-core typescript-simple \
+                     dajet-ui dajet-syntax joer-ui joer-syntax; do
+              if [ -e "$APP/$p" ]; then
+                echo "  есть  $p ($(du -sk "$APP/$p" 2>/dev/null | cut -f1) КБ)"
+                ok=$((ok+1))
+              else
+                echo "  НЕТ   $p"
+                absent=$((absent+1))
+              fi
+            done
+            echo "  на месте: $ok, не найдено: $absent"
+
+            echo
+            echo "=== размер дерева зависимостей приложения ==="
+            echo "  пакетов: $(ls "$APP" | wc -l | tr -d ' ')"
+            echo "  вес:     $(du -sh "$APP" 2>/dev/null | cut -f1)"
+          } > packages.txt 2>&1 || true
+
+      - name: Логи для разбора — в репозиторий
+        if: failure() || inputs.save-report || contains(github.event.head_commit.message, '[logs]')
+        continue-on-error: true
+        run: |
+          git config user.name "Arena Agent"
+          git config user.email "agent@arena.ai"
+          mkdir -p .ci-logs
+          for f in build.log bootstrap.log rg.log mksnapshot-test.log modules-bootstrap.txt modules-app.txt weight.txt packages.txt themes.txt; do
+            if [ -f "$f" ]; then cp "$f" ".ci-logs/$f"; fi
+          done
+          ls -la out/ > .ci-logs/out-listing.txt 2>&1 || true
+          # Темы: они небольшие, в топ весов не попадают, поэтому проверяем
+          # отдельно — что пакеты доехали до сборки целиком, вместе со стилями.
+          {
+            echo "=== наши темы в сборке ==="
+            for t in dajet-ui dajet-syntax joer-ui joer-syntax; do
+              d="out/app/node_modules/$t"
+              if [ -d "$d" ]; then
+                echo "--- $t: $(du -sk "$d" | cut -f1) КБ"
+                ls "$d" | tr '\n' ' '; echo
+                for f in index.less styles/syntax-variables.less styles/ui-variables.less lib/main.js; do
+                  [ -f "$d/$f" ] && echo "    есть $f" || true
+                done
+              else
+                echo "--- $t: НЕТ ($d не найден)"
+              fi
+            done
+            echo "=== темы в package.json приложения ==="
+            grep -o '"\(dajet\|joer\)-[a-z]*": \{0,1\}"file:./packages/[a-z-]*"' out/app/package.json || echo "в package.json приложения тем нет"
+            echo "=== core.themes по умолчанию в собранном коде ==="
+            grep -a -o "default: \['dajet-ui', 'dajet-syntax'\]" out/app/src/config-schema.js || echo "не найдено (код в снапшоте или изменён формат)"
+          } > .ci-logs/themes.txt 2>&1 || true
+          git add -f .ci-logs
+          git commit -qm "ci: логи прогона ${{ github.run_id }} [skip ci]" || echo "нечего коммитить"
+          # Сборка идёт 40 минут — за это время в ветку успевает прилететь
+          # обычный коммит, и прямой push отбивается как non-fast-forward.
+          git pull -q --rebase origin ${{ github.ref_name }} || true
+          git push -q origin HEAD:${{ github.ref_name }}
+
+      - name: Отчёт о сборке — в артефакт
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: atom-macos-report
+          path: |
+            weight.txt
+            modules-app.txt
+            modules-bootstrap.txt
+            rg.log
+            mksnapshot-test.log
+          if-no-files-found: ignore
+
+      - name: Загрузить артефакт
+        if: success()
+        run: |
+          mkdir -p artifacts
+          for f in out/*.zip; do
+            cp "$f" "artifacts/$(basename "$f" .zip)-arm64.zip"
+          done
+          ls -lh artifacts/
+
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: atom-macos-arm64
+          path: artifacts/*.zip
+          if-no-files-found: error

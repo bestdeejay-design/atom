@@ -898,9 +898,8 @@ class AtomEnvironment {
       this.commandInstaller.installAtomCommand(false, error => {
         if (error) console.warn(error.message);
       });
-      this.commandInstaller.installApmCommand(false, error => {
-        if (error) console.warn(error.message);
-      });
+      // ATOM LITE: установки команды `apm` здесь больше нет — менеджер пакетов
+      // в приложение не поставляется.
 
       this.disposables.add(
         this.applicationDelegate.onDidChangeUserSettings(settings =>

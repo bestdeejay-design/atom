@@ -8,6 +8,7 @@ const cleanDependencies = require('./lib/clean-dependencies')
 const deleteMsbuildFromPath = require('./lib/delete-msbuild-from-path')
 const dependenciesFingerprint = require('./lib/dependencies-fingerprint')
 const installApm = require('./lib/install-apm')
+const prepareRipgrep = require('./lib/prepare-ripgrep')
 const runApmInstall = require('./lib/run-apm-install')
 const installScriptDependencies = require('./lib/install-script-dependencies')
 const verifyMachineRequirements = require('./lib/verify-machine-requirements')
@@ -43,6 +44,11 @@ childProcess.execFileSync(
   ['--version'],
   {stdio: 'inherit', env: apmVersionEnv}
 )
-runApmInstall(CONFIG.repositoryRootPath, ci)
+// ATOM LITE: заранее кладём нужную сборку ripgrep в кэш пакета vscode-ripgrep.
+// Пакет для macOS жёстко требует x86_64 и ходит за сборкой через GitHub API,
+// который без токена отвечает 403 (см. script/lib/prepare-ripgrep.js).
+prepareRipgrep().then(() => {
+  runApmInstall(CONFIG.repositoryRootPath, ci)
 
-dependenciesFingerprint.write()
+  dependenciesFingerprint.write()
+})

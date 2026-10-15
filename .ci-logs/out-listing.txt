@@ -1,0 +1,8 @@
+total 306200
+drwxr-xr-x   7 runner  staff        224 Oct 15 00:38 .
+drwxr-xr-x  48 runner  staff       1536 Oct 15 00:38 ..
+drwxr-xr-x  12 runner  staff        384 Oct 15 00:34 app
+drwxr-xr-x   5 runner  staff        160 Oct 15 00:35 Atom Dev-darwin-arm64
+drwxr-xr-x   3 runner  staff         96 Oct 15 00:34 Atom Dev.app
+-rw-r--r--   1 runner  staff  142370459 Oct 15 00:38 atom-mac.zip
+-rw-r--r--   1 runner  staff    5751972 Oct 15 00:37 startup.js

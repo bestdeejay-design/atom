@@ -1,0 +1,86 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Полотно редактора. Фон и текст берутся у UI-темы «joer» (там их задаёт
+// атмосфера), если она активна; иначе — lounge из syntax-variables.less.
+// ─────────────────────────────────────────────────────────────────────────────
+
+atom-text-editor {
+  background-color: var(--joer-bg, @syntax-background-color);
+  color: var(--joer-text, @syntax-text-color);
+
+  .line.cursor-line {
+    background-color: rgba(255, 255, 255, 0.025);
+  }
+
+  // Курсор — акцент атмосферы: то же, чем на сайте отмечено «сейчас».
+  .cursor {
+    border-color: var(--joer-accent, @syntax-cursor-color);
+  }
+
+  .selection .region {
+    background-color: var(--joer-wash, @syntax-selection-color);
+    border-radius: 2px;
+  }
+
+  .bracket-matcher .region {
+    border: 1px solid var(--joer-ring, @syntax-cursor-color);
+    background-color: transparent;
+    border-radius: 3px;
+  }
+
+  .invisible-character,
+  .indent-guide {
+    color: var(--joer-faint, @syntax-invisible-character-color);
+  }
+
+  .indent-guide {
+    box-shadow: inset 1px 0 0 var(--joer-line, @syntax-indent-guide-color);
+  }
+
+  .wrap-guide {
+    background-color: var(--joer-line, @syntax-wrap-guide-color);
+  }
+
+  .find-result .region.region.region,
+  .current-result .region.region.region {
+    border-radius: 3px;
+  }
+
+  .find-result .region.region.region {
+    background-color: var(--joer-wash, @syntax-selection-color);
+    border: 1px solid transparent;
+  }
+
+  .current-result .region.region.region {
+    background-color: transparent;
+    border: 1px solid var(--joer-accent-2, @syntax-result-marker-color-selected);
+  }
+
+  .gutter {
+    background-color: var(--joer-bg, @syntax-background-color);
+    color: var(--joer-faint, @syntax-gutter-text-color);
+    border-right: 0;
+
+    .line-number {
+      color: var(--joer-faint, @syntax-gutter-text-color);
+      font-family: @font-mono;
+      font-size: 11px;
+      padding-left: 6px;
+      padding-right: 10px;
+
+      &.cursor-line {
+        color: var(--joer-text, @syntax-text-color);
+      }
+
+      &.cursor-line-no-selection {
+        color: var(--joer-text, @syntax-text-color);
+        font-weight: 600;
+      }
+    }
+  }
+
+  .fold-marker:after,
+  .gutter .line-number.folded,
+  .gutter .line-number:after {
+    color: var(--joer-faint, @syntax-gutter-text-color);
+  }
+}

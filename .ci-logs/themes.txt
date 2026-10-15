@@ -1,0 +1,26 @@
+=== наши темы в сборке ===
+--- dajet-ui: 44 КБ
+index.less lib LICENSE.md package.json README.md styles 
+    есть index.less
+    есть styles/ui-variables.less
+    есть lib/main.js
+--- dajet-syntax: 36 КБ
+index.less LICENSE.md package.json README.md styles 
+    есть index.less
+    есть styles/syntax-variables.less
+--- joer-ui: 44 КБ
+index.less lib LICENSE.md package.json README.md styles 
+    есть index.less
+    есть styles/ui-variables.less
+    есть lib/main.js
+--- joer-syntax: 32 КБ
+index.less LICENSE.md package.json README.md styles 
+    есть index.less
+    есть styles/syntax-variables.less
+=== темы в package.json приложения ===
+"dajet-syntax":"file:./packages/dajet-syntax"
+"dajet-ui":"file:./packages/dajet-ui"
+"joer-syntax":"file:./packages/joer-syntax"
+"joer-ui":"file:./packages/joer-ui"
+=== core.themes по умолчанию в собранном коде ===
+default: ['dajet-ui', 'dajet-syntax']

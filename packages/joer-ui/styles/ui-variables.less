@@ -1,0 +1,92 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Договор темы с остальными пакетами Atom.
+//
+// Чужие стили читают эти имена и считают из них оттенки, поэтому здесь —
+// настоящие цвета, а не переменные CSS. Значения взяты из атмосферы lounge:
+// она объявлена базовой и в самом joer (css/tokens.css).
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Тексты ---------------------------------------------------------------------
+
+@text-color: #e9ecff;
+@text-color-subtle: #a9b1d8;
+@text-color-highlight: #ffffff;
+@text-color-selected: @text-color-highlight;
+
+@text-color-info: #7dd3fc;
+@text-color-success: #4ade80;
+@text-color-warning: #fbbf24;
+@text-color-error: #fb7185;
+
+@background-color-info: #1d4e78;
+@background-color-success: #245f38;
+@background-color-warning: #6d5210;
+@background-color-error: #7d2f3f;
+@background-color-highlight: rgba(255, 255, 255, 0.055);
+@background-color-selected: rgba(139, 124, 246, 0.18);
+
+// Поверхности: в joer их три ступени — фон, поверхность, поверхность выше ----
+
+@app-background-color: #0b0f1e;
+@base-background-color: #0b0f1e;
+@base-border-color: rgba(255, 255, 255, 0.08);
+
+@pane-item-background-color: #0e1326;
+@pane-item-border-color: rgba(255, 255, 255, 0.08);
+
+@input-background-color: #131a33;
+@input-border-color: #2c3663;
+
+@tool-panel-background-color: #161d3a;
+@tool-panel-border-color: rgba(255, 255, 255, 0.08);
+
+@inset-panel-background-color: #131a33;
+@inset-panel-border-color: #2c3663;
+
+@panel-heading-background-color: #1d2547;
+@panel-heading-border-color: transparent;
+
+@overlay-background-color: #1a2140;
+@overlay-border-color: #2c3663;
+
+@button-background-color: #1d2547;
+@button-background-color-hover: #232c55;
+@button-background-color-selected: #8b7cf6;
+@button-border-color: rgba(255, 255, 255, 0.1);
+
+@tab-bar-background-color: #0b0f1e;
+@tab-bar-border-color: rgba(255, 255, 255, 0.08);
+@tab-background-color: transparent;
+@tab-background-color-active: #0e1326;
+@tab-border-color: rgba(255, 255, 255, 0.08);
+
+@tree-view-background-color: #161d3a;
+@tree-view-border-color: rgba(255, 255, 255, 0.08);
+
+@ui-site-color-1: #4ade80;
+@ui-site-color-2: #7dd3fc;
+@ui-site-color-3: #fbbf24;
+@ui-site-color-4: #8b7cf6;
+@ui-site-color-5: #ff2ec4;
+
+// Расстояния -----------------------------------------------------------------
+
+@font-size: 13px;
+@input-font-size: 13px;
+
+@disclosure-arrow-size: 12px;
+
+@component-padding: 10px;
+@component-icon-padding: 5px;
+@component-icon-size: 16px;
+@component-line-height: 26px;
+@component-border-radius: 10px; // tokens.css: --r-sm
+
+@tab-height: 30px;
+
+@font-family: system-ui, -apple-system, "SF Pro Text", "Helvetica Neue",
+  sans-serif;
+// Моноширинный — из tokens.css сайта: им набраны числа и тайминги.
+@font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+  "Liberation Mono", monospace;
+@use-custom-controls: true;
